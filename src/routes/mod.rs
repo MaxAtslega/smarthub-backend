@@ -1,10 +1,15 @@
 use rocket::{Error, Ignite, Rocket};
+use tokio::sync::broadcast::Receiver;
 use crate::api;
 use crate::config::Config;
 
 mod catcher;
 
-pub async fn init(conf: &Config) -> Result<Rocket<Ignite>, Error> {
+pub struct SharedChannel {
+    pub receiver: Receiver<String>,
+}
+
+pub async fn init(conf: &Config, rx: Receiver<String>) -> Result<Rocket<Ignite>, Error> {
     let conf = &conf.webserver;
 
     let figment = rocket::Config::figment()
@@ -23,7 +28,8 @@ pub async fn init(conf: &Config) -> Result<Rocket<Ignite>, Error> {
             catcher::internal_error,
             catcher::unprocessable_entity,
         ])
-        .mount("/api/v3", routes![api::info::get_info, api::websocket::echo_stream])
+        .manage(SharedChannel { receiver: rx })
+        .mount("/", routes![api::info::get_info, api::websocket::echo_stream])
         .ignite()
         .await?;
 

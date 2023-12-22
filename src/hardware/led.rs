@@ -7,12 +7,10 @@ use embedded_hal::digital::v2::OutputPin;
 use linux_embedded_hal::spidev::{SpiModeFlags, SpidevOptions};
 use linux_embedded_hal::sysfs_gpio::Direction;
 use linux_embedded_hal::{Pin, Spidev};
+use tokio::sync::broadcast;
 
-const LED_PIN: u8 = 17;
-
-pub async fn control_led() -> Result<(), GpioError> {
-    let gpio = Gpio::new()?;
-    let mut led = gpio.get(LED_PIN)?.into_output();
+pub async fn control_led(tx: broadcast::Sender<String>) -> Result<(), GpioError> {
+    Gpio::new()?;
 
     let mut spi = Spidev::open("/dev/spidev0.0").unwrap();
     let options = SpidevOptions::new()
@@ -43,6 +41,8 @@ pub async fn control_led() -> Result<(), GpioError> {
         if let Ok(atqa) = mfrc522.reqa() {
             if let Ok(uid) = mfrc522.select(&atqa) {
                 log::info!("UID: {:?}", uid.as_bytes());
+                let uid_str = format!("UID: {:?}", uid.as_bytes());
+                tx.send(uid_str).unwrap(); // Send UID over the channel
             }
         }
 
