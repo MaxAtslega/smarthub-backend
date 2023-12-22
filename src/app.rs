@@ -7,19 +7,26 @@ pub fn launch(conf: &Config) -> Result<Rocket<Ignite>, Error> {
     // Print welcome message
     info!("Starting App in {}", conf.app.environment);
 
-    // Spawn the task for controlling the LED
-    tokio::spawn(async {
-        if let Err(e) = control_led().await {
-            error!("Failed in control_led: {}", e);
-        }
-    });
-
-    // Build a multi-threaded Tokio runtime
-    tokio::runtime::Builder::new_multi_thread()
+    let runtime = tokio::runtime::Builder::new_multi_thread()
         .thread_name("rocket-worker-thread")
         .enable_all()
         .build()
-        .expect("create tokio runtime")
-        .block_on(routes::init(conf))
+        .expect("Failed to create Tokio runtime");
+
+    // Run the async block within the Tokio runtime
+    runtime.block_on(async {
+        // Spawn the task for controlling the LED
+        tokio::spawn(async {
+            if let Err(e) = control_led().await {
+                error!("Failed in control_led: {}", e);
+            }
+        });
+
+        // Initialize routes and return the Rocket instance
+        match routes::init(conf).await {
+            Ok(rocket) => Ok(rocket),
+            Err(e) => Err(e),
+        }
+    })
 }
 
