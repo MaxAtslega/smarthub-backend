@@ -9,6 +9,9 @@ pub async fn control_led() -> Result<(), GpioError> {
     loop {
         led.set_high();
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
         led.set_low();
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
     }
 }
