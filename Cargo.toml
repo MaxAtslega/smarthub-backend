@@ -25,3 +25,7 @@ config = "0.13.4"
 toml = { version = "0.8.8", features = [] }
 simplelog = "0.12.1"
 rocket_ws = "0.1.0"
+mfrc522 = "0.6.1"
+anyhow = "1.0.76"
+embedded-hal = "0.2.7"
+linux-embedded-hal = "0.3.2"
