@@ -1,3 +1,4 @@
+use std::time::{Duration, Instant};
 use rppal::gpio::{Gpio, Error as GpioError};
 use mfrc522::comm::{eh02::spi::SpiInterface};
 use mfrc522::{Mfrc522};
@@ -33,17 +34,25 @@ pub async fn control_rfid(tx: broadcast::Sender<String>) -> Result<(), GpioError
 
         log::debug!("VERSION: 0x{:x}", vers);
 
+        let mut last_sent = Instant::now();
+        let mut last_uid = None;
 
         loop {
             if let Ok(atqa) = mfrc522.reqa() {
                 if let Ok(uid) = mfrc522.select(&atqa) {
-                    log::info!("UID: {:?}", uid.as_bytes());
                     let uid_str = format!("UID: {:?}", uid.as_bytes());
-                    tx.send(uid_str).unwrap(); // Send UID over the channel
+
+                    // Check if the UID is different from the last sent or if 5 seconds have passed
+                    if last_uid.as_ref() != Some(&uid_str) || last_sent.elapsed() >= Duration::from_secs(5) {
+                        log::info!("{}", &uid_str);
+                        tx.send(uid_str.clone()).unwrap(); // Send UID over the channel
+                        last_uid = Some(uid_str);
+                        last_sent = Instant::now();
+                    }
                 }
             }
 
-
+            std::thread::sleep(Duration::from_secs(1));
         }
     }).await.expect("Failed to execute control_led")
 }
