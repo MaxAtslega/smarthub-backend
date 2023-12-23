@@ -20,5 +20,5 @@ fn main() {
     // Setup simplelog
     log::setup(&conf.log);
 
-    app::launch(&conf).expect("TODO: panic message");
+    app::launch(&conf);
 }
