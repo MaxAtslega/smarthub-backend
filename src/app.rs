@@ -5,7 +5,8 @@ use log::{info, error};
 use rocket::{Ignite, Rocket, Error};
 use tokio::sync::{broadcast, oneshot};
 
-pub fn launch(conf: &Config) {
+#[tokio::main]
+pub async fn launch(conf: &Config) {
     // Print welcome message
     info!("Starting App in {}", conf.app.environment);
 
@@ -16,30 +17,18 @@ pub fn launch(conf: &Config) {
     let (tx, rx1) = broadcast::channel::<String>(10);
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
-    // Build a multi-threaded Tokio runtime
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .thread_name("rocket-worker-thread")
-        .enable_all()
-        .build()
-        .expect("Failed to create Tokio runtime");
+    let control_rfid_handle = tokio::task::spawn_blocking(|| {
+        if let Err(e) = rfid::control_rfid(tx, shutdown_rx) {
+            error!("Failed in control_led: {}", e);
+        }
+    });
 
-    runtime.block_on(async {
-        let control_rfid_handle = tokio::spawn(async move {
-            if let Err(e) = rfid::control_rfid(tx, shutdown_rx).await {
-                error!("Failed in control_led: {}", e);
-            }
-        });
+    routes::init(ident, address, port, rx1).await.expect("Failed to start Rocket server");
 
-        routes::init(ident, address, port, rx1).await;
+    // Send shutdown signal
+    let _ = shutdown_tx.send(());
 
-        // Wait for CTRL+C
-        tokio::signal::ctrl_c().await.expect("Failed to listen for CTRL+C");
+    let _ = control_rfid_handle.await;
 
-        // Send shutdown signal
-        let _ = shutdown_tx.send(());
-
-        // Optionally, wait for the `control_rfid` task to finish
-        let _ = control_rfid_handle.await;
-    })
 }
 
