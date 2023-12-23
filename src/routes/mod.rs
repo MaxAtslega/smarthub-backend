@@ -29,7 +29,7 @@ pub async fn init(ident: String, address: IpAddr, port: u16, rx: Receiver<String
             catcher::unprocessable_entity,
         ])
         .manage(SharedChannel { receiver: rx })
-        .mount("/", routes![api::info::get_info, api::websocket::echo_stream])
+        .mount("/", routes![api::info::get_info, api::led::flash_blue, api::led::flash_green, api::led::flash_red, api::websocket::echo_stream])
         .ignite()
         .await?;
 
