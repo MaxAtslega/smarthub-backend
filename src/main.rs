@@ -1,7 +1,5 @@
 #[macro_use]
 extern crate diesel;
-#[macro_use]
-extern crate rocket;
 
 use config::Config;
 
@@ -9,8 +7,7 @@ mod app;
 mod models;
 mod config;
 mod log;
-mod routes;
-mod api;
+mod websocket;
 mod hardware;
 
 fn main() {

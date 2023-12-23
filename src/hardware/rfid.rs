@@ -6,10 +6,12 @@ use linux_embedded_hal::sysfs_gpio::Direction;
 use mfrc522::comm::eh02::spi::SpiInterface;
 use mfrc522::Mfrc522;
 use rppal::gpio::{Error as GpioError, Gpio};
-use tokio::sync::{broadcast, oneshot};
+use tokio::sync::{oneshot};
+use tokio::sync::broadcast::Sender;
+use crate::app::Notification;
 
 #[tokio::main]
-pub async fn control_rfid(tx: broadcast::Sender<String>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), GpioError> {
+pub async fn control_rfid(tx: Sender<Notification>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), GpioError> {
     Gpio::new()?;
 
     let mut spi = Spidev::open("/dev/spidev0.0").unwrap();
@@ -45,7 +47,13 @@ pub async fn control_rfid(tx: broadcast::Sender<String>, mut shutdown_rx: onesho
                 // Check if the UID is different from the last sent or if 5 seconds have passed
                 if last_uid.as_ref() != Some(&uid_str) || last_sent.elapsed() >= Duration::from_secs(5) {
                     log::info!("{}", &uid_str);
-                    tx.send(uid_str.clone()).unwrap(); // Send UID over the channel
+
+                    let notif = Notification {
+                        title: "RFID_DETECT".to_string(),
+                        data: uid_str.to_string(),
+                    };
+
+                    tx.send(notif).unwrap(); // Send UID over the channel
                     last_uid = Some(uid_str);
                     last_sent = Instant::now();
                 }
@@ -57,6 +65,28 @@ pub async fn control_rfid(tx: broadcast::Sender<String>, mut shutdown_rx: onesho
         }
 
         std::thread::sleep(Duration::from_millis(100));
+    }
+
+    Ok(())
+}
+
+#[tokio::main]
+pub async fn test(tx: Sender<Notification>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), ()> {
+
+    loop {
+        if shutdown_rx.try_recv().is_ok() {
+            break;
+        }
+
+        std::thread::sleep(Duration::from_millis(10000));
+
+        let notif = Notification {
+            title: "RFID_DETECT".to_string(),
+            data: "Test".to_string(),
+        };
+
+        tx.send(notif).unwrap();
+
     }
 
     Ok(())

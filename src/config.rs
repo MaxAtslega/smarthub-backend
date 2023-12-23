@@ -2,7 +2,6 @@ use std::{env, fs};
 use std::net::IpAddr;
 
 use log::{debug, error};
-use rocket::log::LogLevel;
 use serde_derive::Deserialize;
 use thiserror::Error;
 
@@ -27,9 +26,7 @@ pub struct AppConf {
 pub struct WebServerConf {
     pub address: IpAddr,
     pub port: u16,
-    pub ident: String,
-    pub log_level: LogLevel,
-}
+    pub ident: String, }
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
