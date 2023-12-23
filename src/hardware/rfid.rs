@@ -5,14 +5,17 @@ use linux_embedded_hal::spidev::{SpidevOptions, SpiModeFlags};
 use linux_embedded_hal::sysfs_gpio::Direction;
 use mfrc522::comm::eh02::spi::SpiInterface;
 use mfrc522::Mfrc522;
-use rppal::gpio::{Error as GpioError, Gpio};
-use tokio::sync::{oneshot};
 use tokio::sync::broadcast::Sender;
+use tokio::sync::oneshot;
+
 use crate::app::Notification;
+use crate::common::utils;
 
 #[tokio::main]
-pub async fn control_rfid(tx: Sender<Notification>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), GpioError> {
-    Gpio::new()?;
+pub async fn control_rfid(tx: Sender<Notification>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
+    if !utils::is_raspberry_pi_4b() {
+        return Err("This app is only compatible with Raspberry Pi 4 Model B".to_string());
+    }
 
     let mut spi = Spidev::open("/dev/spidev0.0").unwrap();
     let options = SpidevOptions::new()

@@ -9,6 +9,7 @@ mod config;
 mod log;
 mod websocket;
 mod hardware;
+mod common;
 
 fn main() {
     let conf = Config::from_any().unwrap();
