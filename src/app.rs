@@ -2,9 +2,10 @@ use std::sync::Arc;
 use crate::{Config, routes};
 use crate::hardware::led::control_led;
 use log::{info, error};
+use rocket::{Ignite, Rocket, Error};
 use tokio::sync::broadcast;
 
-pub fn launch(conf: &Config) {
+pub fn launch(conf: &Config) -> Result<Rocket<Ignite>, Error> {
     // Print welcome message
     info!("Starting App in {}", conf.app.environment);
 
@@ -14,6 +15,7 @@ pub fn launch(conf: &Config) {
 
     let (tx, rx1) = broadcast::channel::<String>(10);
 
+    // Build a multi-threaded Tokio runtime
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .thread_name("rocket-worker-thread")
         .enable_all()
@@ -22,20 +24,16 @@ pub fn launch(conf: &Config) {
 
     // Run the async block within the Tokio runtime
     runtime.block_on(async {
-        // Spawn the task for controlling the LED
+        // Spawn the task for controlling the LED or RFID reading
+        let tx_clone = tx.clone();
         tokio::spawn(async move {
-            if let Err(e) = control_led(tx).await {
+            if let Err(e) = control_led(tx_clone).await {
                 error!("Failed in control_led: {}", e);
             }
         });
 
-        // Spawn the Rocket server as a separate async task
-        let rocket = tokio::spawn(async move {
-            routes::init(ident, address, port, rx1).await.unwrap()
-        });
-
-        // Wait for both tasks to complete
-        let _ = tokio::join!(rocket);
-    });
+        // Initialize routes and return the Rocket instance
+        routes::init(ident, address, port, rx1).await
+    })
 }
 
