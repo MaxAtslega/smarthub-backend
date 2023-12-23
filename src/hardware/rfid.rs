@@ -1,15 +1,13 @@
 use rppal::gpio::{Gpio, Error as GpioError};
-use mfrc522::comm::{eh02::spi::SpiInterface, Interface};
+use mfrc522::comm::{eh02::spi::SpiInterface};
 use mfrc522::{Mfrc522};
 
-use embedded_hal::blocking::spi::{Transfer as SpiTransfer, Write as SpiWrite};
-use embedded_hal::digital::v2::OutputPin;
 use linux_embedded_hal::spidev::{SpiModeFlags, SpidevOptions};
 use linux_embedded_hal::sysfs_gpio::Direction;
 use linux_embedded_hal::{Pin, Spidev};
 use tokio::sync::broadcast;
 
-pub async fn control_led(tx: broadcast::Sender<String>) -> Result<(), GpioError> {
+pub async fn control_rfid(tx: broadcast::Sender<String>) -> Result<(), GpioError> {
     tokio::task::spawn_blocking(move || {
         Gpio::new()?;
 
@@ -48,14 +46,4 @@ pub async fn control_led(tx: broadcast::Sender<String>) -> Result<(), GpioError>
 
         }
     }).await.expect("Failed to execute control_led")
-}
-
-
-pub async fn test(tx: broadcast::Sender<String>) {
-    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-
-    loop {
-        tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
-        tx.send("Hello".to_string()).unwrap();
-    }
 }

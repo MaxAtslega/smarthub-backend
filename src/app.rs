@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use crate::{Config, routes};
-use crate::hardware::led;
+use crate::hardware::rfid;
 use log::{info, error};
 use rocket::{Ignite, Rocket, Error};
 use tokio::sync::broadcast;
@@ -23,9 +23,8 @@ pub fn launch(conf: &Config) -> Result<Rocket<Ignite>, Error> {
         .expect("Failed to create Tokio runtime");
 
     runtime.block_on(async {
-        let tx_clone = tx.clone();
         tokio::spawn(async move {
-            if let Err(e) = led::control_led(tx_clone).await {
+            if let Err(e) = rfid::control_rfid(tx).await {
                 error!("Failed in control_led: {}", e);
             }
         });
