@@ -6,9 +6,9 @@ use mfrc522::{Mfrc522};
 use linux_embedded_hal::spidev::{SpiModeFlags, SpidevOptions};
 use linux_embedded_hal::sysfs_gpio::Direction;
 use linux_embedded_hal::{Pin, Spidev};
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, oneshot};
 
-pub async fn control_rfid(tx: broadcast::Sender<String>) -> Result<(), GpioError> {
+pub async fn control_rfid(tx: broadcast::Sender<String>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), GpioError> {
     tokio::task::spawn_blocking(move || {
         Gpio::new()?;
 
@@ -52,7 +52,13 @@ pub async fn control_rfid(tx: broadcast::Sender<String>) -> Result<(), GpioError
                 }
             }
 
-            std::thread::sleep(Duration::from_secs(1));
+            if shutdown_rx.try_recv().is_ok() {
+                break;
+            }
+
+            std::thread::sleep(Duration::from_millis(100));
         }
+
+        Ok(())
     }).await.expect("Failed to execute control_led")
 }
