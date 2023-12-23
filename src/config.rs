@@ -1,10 +1,10 @@
-use rocket::log::LogLevel;
-use serde_derive::Deserialize;
-use std::net::IpAddr;
 use std::{env, fs};
-use thiserror::Error;
+use std::net::IpAddr;
 
 use log::{debug, error};
+use rocket::log::LogLevel;
+use serde_derive::Deserialize;
+use thiserror::Error;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -32,7 +32,7 @@ pub struct WebServerConf {
 }
 
 #[derive(Error, Debug)]
-pub enum ConfigError{
+pub enum ConfigError {
     #[error("Config File could not be found")]
     ConfigNotFound(std::io::Error),
 
@@ -43,11 +43,11 @@ pub enum ConfigError{
     EnvVarNotFound(std::env::VarError),
 }
 
-impl Config{
-    pub fn from_any() -> Result<Self, ConfigError>{
+impl Config {
+    pub fn from_any() -> Result<Self, ConfigError> {
         //Try to read from path env var
         let env_result = Self::from_env_path();
-        match env_result{
+        match env_result {
             Ok(config) => {
                 debug!("Loaded config from env path");
                 return Ok(config);
@@ -59,7 +59,7 @@ impl Config{
 
         //Try to read default path
         let default_result = Self::from_default_path();
-        match default_result{
+        match default_result {
             Ok(config) => {
                 debug!("Loaded config from default path");
                 return Ok(config);
@@ -72,24 +72,24 @@ impl Config{
     }
 
     // Read Config from default path
-    pub fn from_default_path() -> Result<Self, ConfigError>{
+    pub fn from_default_path() -> Result<Self, ConfigError> {
         let path = "config.toml";
         Self::from_file_path(&path)
     }
 
     // Read Config from path in CONFIG_LOCATION env variable
-    pub fn from_env_path() -> Result<Self, ConfigError>{
+    pub fn from_env_path() -> Result<Self, ConfigError> {
         let path = env::var("CONFIG_LOCATION")
-            .map_err(|e|ConfigError::EnvVarNotFound(e))?;
+            .map_err(|e| ConfigError::EnvVarNotFound(e))?;
         Self::from_file_path(&path)
     }
 
     // Read and Parse Config from path
-    pub fn from_file_path(path: &str)->Result<Self, ConfigError>{
+    pub fn from_file_path(path: &str) -> Result<Self, ConfigError> {
         let data = fs::read_to_string(path)
-            .map_err(|e|ConfigError::ConfigNotFound(e))?;
+            .map_err(|e| ConfigError::ConfigNotFound(e))?;
 
         toml::from_str(data.as_str())
-            .map_err(|e|ConfigError::ParsingError(e))
+            .map_err(|e| ConfigError::ParsingError(e))
     }
 }

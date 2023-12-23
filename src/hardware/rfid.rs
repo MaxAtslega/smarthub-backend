@@ -1,11 +1,11 @@
 use std::time::{Duration, Instant};
-use rppal::gpio::{Gpio, Error as GpioError};
-use mfrc522::comm::{eh02::spi::SpiInterface};
-use mfrc522::{Mfrc522};
 
-use linux_embedded_hal::spidev::{SpiModeFlags, SpidevOptions};
-use linux_embedded_hal::sysfs_gpio::Direction;
 use linux_embedded_hal::{Pin, Spidev};
+use linux_embedded_hal::spidev::{SpidevOptions, SpiModeFlags};
+use linux_embedded_hal::sysfs_gpio::Direction;
+use mfrc522::comm::eh02::spi::SpiInterface;
+use mfrc522::Mfrc522;
+use rppal::gpio::{Error as GpioError, Gpio};
 use tokio::sync::{broadcast, oneshot};
 
 #[tokio::main]

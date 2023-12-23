@@ -1,8 +1,9 @@
 #[macro_use]
+extern crate diesel;
+#[macro_use]
 extern crate rocket;
 
-#[macro_use]
-extern crate diesel;
+use config::Config;
 
 mod app;
 mod models;
@@ -11,8 +12,6 @@ mod log;
 mod routes;
 mod api;
 mod hardware;
-
-use config::Config;
 
 fn main() {
     let conf = Config::from_any().unwrap();

@@ -1,9 +1,9 @@
 use std::net::IpAddr;
+
 use rocket::{Error, Ignite, Rocket};
-use rocket::config::LogLevel;
 use tokio::sync::broadcast::Receiver;
+
 use crate::api;
-use crate::config::Config;
 
 mod catcher;
 
@@ -12,7 +12,6 @@ pub struct SharedChannel {
 }
 
 pub async fn init(ident: String, address: IpAddr, port: u16, rx: Receiver<String>) -> Result<Rocket<Ignite>, Error> {
-
     let figment = rocket::Config::figment()
         .merge(("port", port))
         .merge(("address", address))
@@ -20,7 +19,7 @@ pub async fn init(ident: String, address: IpAddr, port: u16, rx: Receiver<String
         .merge(("log_level", "Off"));
 
     let rocket = rocket::custom(figment)
-        .register("/",catchers![
+        .register("/", catchers![
             catcher::bad_request,
             catcher::unauthorized,
             catcher::forbidden,

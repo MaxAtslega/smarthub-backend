@@ -1,5 +1,5 @@
+use chrono::NaiveDateTime;
 use serde_derive::Deserialize;
-use chrono::{NaiveDateTime};
 
 #[derive(Debug, Queryable, Deserialize)]
 pub struct User {

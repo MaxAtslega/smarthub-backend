@@ -1,7 +1,9 @@
-use crate::config::LogConf;
-use log::LevelFilter;
-use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
 use std::fs::File;
+
+use log::LevelFilter;
+use simplelog::{ColorChoice, CombinedLogger, Config, TerminalMode, TermLogger, WriteLogger};
+
+use crate::config::LogConf;
 
 pub fn setup(conf: &LogConf) {
     CombinedLogger::init(vec![
