@@ -110,3 +110,77 @@
 }
 00:31:57 [INFO] [32mResponse succeeded.[0m
 00:31:57 [INFO] Upgrade successful.
+00:35:10 [DEBUG] (4) rocket::server: Received request: Request {
+    method: GET,
+    uri: /,
+    version: HTTP/1.1,
+    headers: {
+        "host": "0.0.0.0:6814",
+        "connection": "keep-alive",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Termius/8.9.0 Chrome/106.0.5249.199 Electron/21.4.4 Safari/537.36",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+        "accept-encoding": "gzip, deflate",
+        "accept-language": "en-US",
+    },
+    body: Body(
+        Empty,
+    ),
+}
+00:35:10 [INFO] [32mGET[0m [34m/[0m [33mtext/html[0m:
+00:35:10 [ERROR] No matching routes for [32mGET[0m [34m/[0m [33mtext/html[0m.
+00:35:10 [WARN] Responding with registered [36m([0m[39mnot_found[0m[36m)[0m [34m404[0m catcher.
+00:35:10 [DEBUG] (4) rocket::server: sending response: Response {
+    status: 404,
+    version: HTTP/1.1,
+    headers: {
+        "content-type": "application/json",
+        "server": "SmartHub-API-Server_v1",
+        "x-content-type-options": "nosniff",
+        "permissions-policy": "interest-cohort=()",
+        "x-frame-options": "SAMEORIGIN",
+        "content-length": "34",
+    },
+    body: Body(
+        Streaming,
+    ),
+}
+00:35:10 [INFO] [32mResponse succeeded.[0m
+00:38:09 [DEBUG] (4) rocket::server: Received request: Request {
+    method: GET,
+    uri: /,
+    version: HTTP/1.1,
+    headers: {
+        "host": "0.0.0.0:6814",
+        "connection": "keep-alive",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Termius/8.9.0 Chrome/106.0.5249.199 Electron/21.4.4 Safari/537.36",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+        "accept-encoding": "gzip, deflate",
+        "accept-language": "en-US",
+    },
+    body: Body(
+        Empty,
+    ),
+}
+00:38:09 [INFO] [32mGET[0m [34m/[0m [33mtext/html[0m:
+00:38:09 [ERROR] No matching routes for [32mGET[0m [34m/[0m [33mtext/html[0m.
+00:38:09 [WARN] Responding with registered [36m([0m[39mnot_found[0m[36m)[0m [34m404[0m catcher.
+00:38:09 [DEBUG] (4) rocket::server: sending response: Response {
+    status: 404,
+    version: HTTP/1.1,
+    headers: {
+        "content-type": "application/json",
+        "server": "SmartHub-API-Server_v1",
+        "x-content-type-options": "nosniff",
+        "permissions-policy": "interest-cohort=()",
+        "x-frame-options": "SAMEORIGIN",
+        "content-length": "34",
+    },
+    body: Body(
+        Streaming,
+    ),
+}
+00:38:09 [INFO] [32mResponse succeeded.[0m
+00:43:24 [WARN] Received SIGINT. Requesting shutdown.
+00:43:24 [INFO] Shutdown requested. Waiting for pending I/O...
