@@ -24,6 +24,14 @@ pub fn launch(conf: &Config) -> Result<Rocket<Ignite>, Error> {
 
     // Run the async block within the Tokio runtime
     runtime.block_on(async {
+        // Spawn the task for controlling the LED or RFID reading
+        let tx_clone = tx.clone();
+        tokio::spawn(async move {
+            if let Err(e) = control_led(tx_clone).await {
+                error!("Failed in control_led: {}", e);
+            }
+        });
+
         // Initialize routes and return the Rocket instance
         routes::init(ident, address, port, rx1).await
     })
