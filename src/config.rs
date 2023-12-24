@@ -8,7 +8,7 @@ use thiserror::Error;
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub app: AppConf,
-    pub webserver: WebServerConf,
+    pub websocket: WebSocketConf,
     pub log: LogConf,
 }
 
@@ -23,10 +23,10 @@ pub struct AppConf {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct WebServerConf {
+pub struct WebSocketConf {
     pub address: IpAddr,
-    pub port: u16,
-    pub ident: String, }
+    pub port: u16
+}
 
 #[derive(Error, Debug)]
 pub enum ConfigError {

@@ -10,6 +10,8 @@ mod log;
 mod websocket;
 mod hardware;
 mod common;
+mod enums;
+mod handlers;
 
 fn main() {
     let conf = Config::from_any().unwrap();

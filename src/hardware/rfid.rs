@@ -8,11 +8,11 @@ use mfrc522::Mfrc522;
 use tokio::sync::broadcast::Sender;
 use tokio::sync::oneshot;
 
-use crate::app::Notification;
 use crate::common::utils;
+use crate::models::notification_response::NotificationResponse;
 
 #[tokio::main]
-pub async fn control_rfid(tx: Sender<Notification>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
+pub async fn control_rfid(tx: Sender<NotificationResponse>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
     if !utils::is_raspberry_pi_4b() {
         return Err("This app is only compatible with Raspberry Pi 4 Model B".to_string());
     }
@@ -51,7 +51,7 @@ pub async fn control_rfid(tx: Sender<Notification>, mut shutdown_rx: oneshot::Re
                 if last_uid.as_ref() != Some(&uid_str) || last_sent.elapsed() >= Duration::from_secs(5) {
                     log::info!("{}", &uid_str);
 
-                    let notif = Notification {
+                    let notif = NotificationResponse {
                         title: "RFID_DETECT".to_string(),
                         data: uid_str.to_string(),
                     };
@@ -74,7 +74,8 @@ pub async fn control_rfid(tx: Sender<Notification>, mut shutdown_rx: oneshot::Re
 }
 
 #[tokio::main]
-pub async fn test(tx: Sender<Notification>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), ()> {
+#[warn(dead_code)]
+pub async fn test(tx: Sender<NotificationResponse>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), ()> {
 
     loop {
         if shutdown_rx.try_recv().is_ok() {
@@ -83,7 +84,7 @@ pub async fn test(tx: Sender<Notification>, mut shutdown_rx: oneshot::Receiver<(
 
         std::thread::sleep(Duration::from_millis(10000));
 
-        let notif = Notification {
+        let notif = NotificationResponse {
             title: "RFID_DETECT".to_string(),
             data: "Test".to_string(),
         };

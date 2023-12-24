@@ -1,12 +1,10 @@
 use rppal::gpio::{Gpio, Error as GpioError};
+use crate::enums::led_type::LEDType;
 
-pub const LED_RED_PIN: u8 = 21;
-pub const LED_GREEN_PIN: u8 = 20;
-pub const LED_BLUE_PIN: u8 = 16;
 
-pub async fn flash_led(pin: u8) -> Result<(), GpioError> {
+pub async fn flash_led(led_type: LEDType) -> Result<(), GpioError> {
     let gpio = Gpio::new()?;
-    let mut led = gpio.get(pin)?.into_output();
+    let mut led = gpio.get(led_type as u8)?.into_output();
 
     for _ in 0..6 {
         led.set_high();
