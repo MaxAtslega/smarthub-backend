@@ -1,8 +1,5 @@
 use std::net::SocketAddr;
-
-use futures_util::{SinkExt, StreamExt};
 use log::{error, info};
-use serde_derive::{Deserialize, Serialize};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::broadcast::Receiver;
 use tokio_tungstenite::{
@@ -26,7 +23,7 @@ pub async fn init(web_socket_conf: &WebSocketConf, rx: Receiver<NotificationResp
         info!("Peer address: {}", peer);
 
         let rx_clone = rx.resubscribe();
-        tokio::spawn(accept_connection(peer, stream, rx_clone));
+        accept_connection(peer, stream, rx_clone).await;
     }
 
     Ok(())

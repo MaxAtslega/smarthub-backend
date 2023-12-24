@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate diesel;
+extern crate dbus;
 
 use config::Config;
 

@@ -14,8 +14,8 @@ pub async fn launch(conf: &Config) {
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
     let control_rfid_handle = tokio::task::spawn_blocking(|| {
-        if let Err(e) = rfid::control_rfid(tx, shutdown_rx) {
-            error!("Failed in control_led: {}", e);
+        if let Err(e) = rfid::test(tx, shutdown_rx) {
+            //error!("Failed in control_led: {}", e);
         }
     });
 
