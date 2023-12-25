@@ -7,4 +7,5 @@ pub(crate) enum DbusCommand {
     UnpairBluetoothDevice(String),
     TrustBluetoothDevice(String),
     UntrustBluetoothDevice(String),
+    GetCurrentNetwork,
 }
