@@ -25,7 +25,7 @@ pub struct AppConf {
 #[derive(Deserialize, Debug)]
 pub struct WebSocketConf {
     pub address: IpAddr,
-    pub port: u16
+    pub port: u16,
 }
 
 #[derive(Error, Debug)]

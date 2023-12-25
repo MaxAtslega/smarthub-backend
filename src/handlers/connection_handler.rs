@@ -1,27 +1,20 @@
 use std::{io, net::SocketAddr};
 use std::process::Command;
-use std::time::Duration;
-use dbus::blocking;
-use dbus::nonblock::{Proxy};
-use dbus::blocking::Connection;
 
 use futures_util::{SinkExt, StreamExt};
 use log::{error, info};
 use serde_derive::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::Receiver;
-use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
-
 use tokio_tungstenite::{
     accept_async,
     tungstenite::{Message, Result}};
-use crate::app::DbusCommand;
 
+use crate::app::DbusCommand;
 use crate::enums::led_type::LEDType;
-use crate::handlers::bluetooth_handler::{BluetoothDevice, connect_to_bluetooth_device, disconnect_bluetooth_device, pair_with_bluetooth_device, start_bluetooth_scanning, stop_bluetooth_scanning, unpair_bluetooth_device};
+use crate::handlers::bluetooth_handler::{connect_to_bluetooth_device, disconnect_bluetooth_device, pair_with_bluetooth_device, unpair_bluetooth_device};
 use crate::hardware::led;
-use crate::models::notification_data::NotificationData;
 use crate::models::notification_response::NotificationResponse;
 use crate::models::websocket_message::WebSocketMessage;
 

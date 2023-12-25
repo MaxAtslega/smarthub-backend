@@ -1,6 +1,6 @@
-use rppal::gpio::{Gpio, Error as GpioError};
-use crate::enums::led_type::LEDType;
+use rppal::gpio::{Error as GpioError, Gpio};
 
+use crate::enums::led_type::LEDType;
 
 pub async fn flash_led(led_type: LEDType) -> Result<(), GpioError> {
     let gpio = Gpio::new()?;

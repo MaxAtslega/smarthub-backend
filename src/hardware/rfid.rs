@@ -76,7 +76,6 @@ pub async fn control_rfid(tx: Sender<NotificationResponse>, mut shutdown_rx: one
 #[tokio::main]
 #[warn(dead_code)]
 pub async fn test(tx: Sender<NotificationResponse>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), ()> {
-
     loop {
         if shutdown_rx.try_recv().is_ok() {
             break;
@@ -91,7 +90,6 @@ pub async fn test(tx: Sender<NotificationResponse>, mut shutdown_rx: oneshot::Re
         };
 
         tx.send(notif).unwrap();
-
     }
 
     Ok(())

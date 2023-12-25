@@ -1,32 +1,25 @@
 extern crate dbus;
 
-use std::collections::{HashMap, HashSet};
-use std::time::Duration;
+use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
+use std::sync::atomic::AtomicBool;
+use std::time::Duration;
+
+use dbus::{Message, nonblock};
 use dbus::arg::{RefArg, Variant};
-use dbus::channel::MatchingReceiver;
 use dbus::message::MatchRule;
-use dbus::{blocking, Message, nonblock};
-use dbus::blocking::Connection;
-use dbus::nonblock::stdintf::org_freedesktop_dbus::{ObjectManager, Properties};
-use dbus::nonblock::{Proxy, SyncConnection};
-use serde_derive::{Deserialize, Serialize};
-use tokio::sync::{mpsc, Mutex};
-use tokio::sync::mpsc::Sender;
+use dbus::nonblock::stdintf::org_freedesktop_dbus::Properties;
+use dbus::nonblock::SyncConnection;
 use dbus_tokio::connection;
-use futures_util::future;
-use lazy_static::lazy_static;
-use log::{debug, error, info};
+use log::{error, info};
+use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
+use tokio::sync::mpsc::Receiver;
 use tokio::task;
-use tokio::task::JoinHandle;
-use tokio::time::sleep;
+
 use crate::app::DbusCommand;
 use crate::models::notification_response::NotificationResponse;
-use tokio::sync::mpsc::{channel, Receiver};
 
 const BLUETOOTH_DEVICE_PATH: &str = "/org/bluez/hci0";
 
@@ -39,14 +32,10 @@ pub struct BluetoothDevice {
 static IS_SCANNING: AtomicBool = AtomicBool::new(false);
 
 pub async fn start_bluetooth_scanning() -> Result<(), Box<dyn Error>> {
-
-
     Ok(())
 }
 
 pub async fn stop_bluetooth_scanning() -> Result<(), Box<dyn Error>> {
-
-
     Ok(())
 }
 
@@ -82,27 +71,27 @@ async fn get_device_name(conn: &Arc<SyncConnection>, device_path: &str) -> Resul
     }
 }
 
-async fn handle_dbus_commands(mut rx: Receiver<DbusCommand>, conn: Arc<SyncConnection> ) {
+async fn handle_dbus_commands(mut rx: Receiver<DbusCommand>, conn: Arc<SyncConnection>) {
     while let Some(command) = rx.recv().await {
         match command {
             DbusCommand::BLUEZ(msg) => {
                 let conn = conn.clone();
 
                 let proxy = nonblock::Proxy::new("org.bluez", "/org/bluez/hci0", Duration::from_secs(5), conn);
-                let (_,): (String,) = match proxy.method_call("org.bluez.Adapter1", msg, ()).await {
+                let (_, ): (String, ) = match proxy.method_call("org.bluez.Adapter1", msg, ()).await {
                     Ok(resp) => resp,
                     Err(_) => {
                         continue;
                     }
                 };
-            },
+            }
             // ... handle other commands
         }
     }
 }
 
 #[tokio::main]
-pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>, mut rx_dbus: Receiver<DbusCommand>) -> Result<(), Box<dyn std::error::Error>>{
+pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>, mut rx_dbus: Receiver<DbusCommand>) -> Result<(), Box<dyn std::error::Error>> {
     let (resource, conn) = connection::new_system_sync()?;
 
     tokio::spawn(async {
@@ -126,7 +115,7 @@ pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>,
 
 
     use futures_util::stream::StreamExt;
-    let stream = stream.for_each(|(msg, (source,)): (Message, (String,))| {
+    let stream = stream.for_each(|(msg, (source, )): (Message, (String, ))| {
         let conn_clone = conn.clone();
 
         if let Ok((interface, changed_properties)) = msg.read2::<String, HashMap<String, Variant<Box<dyn RefArg>>>>() {
@@ -157,11 +146,11 @@ pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>,
                                         };
 
                                         tx.send(notif).unwrap();
-                                    },
+                                    }
                                     Err(e) => error!("Error getting device name: {}", e),
                                 }
                             });
-                        },
+                        }
                         "UUIDs" => {
                             let device_path = msg.path().unwrap().to_string();
                             let conn_clone = conn_clone.clone();
@@ -180,7 +169,7 @@ pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>,
                                     Err(e) => eprintln!("Error getting device name: {}", e),
                                 }
                             });
-                        },
+                        }
                         "Trusted" => {
                             let device_path = msg.path().unwrap().to_string();
                             let trusted = variant.0.as_u64().unwrap_or(0) != 0;
@@ -209,7 +198,7 @@ pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>,
                                     Err(e) => eprintln!("Error getting device name: {}", e),
                                 }
                             });
-                        },
+                        }
                         "Paired" => {
                             let device_path = msg.path().unwrap().to_string();
                             let paired = variant.0.as_u64().unwrap_or(0) != 0;
@@ -238,7 +227,7 @@ pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>,
                                     Err(e) => eprintln!("Error getting device name: {}", e),
                                 }
                             });
-                        },
+                        }
                         "Boned" => {
                             let device_path = msg.path().unwrap().to_string();
                             let bonded = variant.0.as_u64().unwrap_or(0) != 0;
@@ -267,8 +256,8 @@ pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>,
                                     Err(e) => eprintln!("Error getting device name: {}", e),
                                 }
                             });
-                        },
-                        _ => {},
+                        }
+                        _ => {}
                     }
                 }
             } else if interface == "org.bluez.Adapter1" {
@@ -290,8 +279,8 @@ pub async fn listening(tx: tokio::sync::broadcast::Sender<NotificationResponse>,
                                     data: json!(discovering),
                                 }
                             };
-                        },
-                        _ => {},
+                        }
+                        _ => {}
                     }
                 }
             }
