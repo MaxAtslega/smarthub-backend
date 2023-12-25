@@ -3,13 +3,10 @@ use tokio::sync::{broadcast, oneshot};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{Config, websocket};
-use crate::handlers::bluetooth_handler;
+use crate::enums::dbus_command::DbusCommand;
+use crate::handlers::dbus_handler;
 use crate::hardware::rfid;
 use crate::models::notification_response::NotificationResponse;
-
-pub(crate) enum DbusCommand {
-    BLUEZ(String),
-}
 
 #[tokio::main]
 pub async fn launch(conf: &Config) {
@@ -29,7 +26,7 @@ pub async fn launch(conf: &Config) {
     });
 
     let control_bluetooth_handle = tokio::task::spawn_blocking(|| {
-        if let Err(e) = bluetooth_handler::listening(tx2, rx_dbus) {
+        if let Err(e) = dbus_handler::dbus_handler(tx2, rx_dbus) {
             error!("Failed in bluetooth_handler: {}", e);
         }
     });

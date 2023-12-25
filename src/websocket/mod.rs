@@ -6,8 +6,8 @@ use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::tungstenite::{Error, Result};
 
-use crate::app::DbusCommand;
 use crate::config::WebSocketConf;
+use crate::enums::dbus_command::DbusCommand;
 use crate::handlers::connection_handler::handle_connection;
 use crate::models::notification_response::NotificationResponse;
 
@@ -24,7 +24,7 @@ pub async fn init(web_socket_conf: &WebSocketConf, rx: Receiver<NotificationResp
 
         let rx_clone = rx.resubscribe();
         let tx_clone = tx_dbus.clone();
-        accept_connection(peer, stream, rx_clone, tx_clone).await;
+        tokio::spawn(accept_connection(peer, stream, rx_clone, tx_clone));
     }
 
     Ok(())

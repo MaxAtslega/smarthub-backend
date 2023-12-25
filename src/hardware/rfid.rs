@@ -72,25 +72,3 @@ pub async fn control_rfid(tx: Sender<NotificationResponse>, mut shutdown_rx: one
 
     Ok(())
 }
-
-#[tokio::main]
-#[warn(dead_code)]
-pub async fn test(tx: Sender<NotificationResponse>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), ()> {
-    loop {
-        if shutdown_rx.try_recv().is_ok() {
-            break;
-        }
-
-        std::thread::sleep(Duration::from_millis(10000));
-
-        let notif = NotificationResponse {
-            title: "RFID_DETECT".to_string(),
-            op: 1,
-            data: json!("Test"),
-        };
-
-        tx.send(notif).unwrap();
-    }
-
-    Ok(())
-}
