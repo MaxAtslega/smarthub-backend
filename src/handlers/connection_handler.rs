@@ -1,5 +1,9 @@
 use std::{io, net::SocketAddr};
 use std::process::Command;
+use std::time::Duration;
+use dbus::blocking;
+use dbus::nonblock::{Proxy};
+use dbus::blocking::Connection;
 
 use futures_util::{SinkExt, StreamExt};
 use log::{error, info};
@@ -7,10 +11,12 @@ use serde_derive::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc;
+use tokio::sync::mpsc::Sender;
 
 use tokio_tungstenite::{
     accept_async,
     tungstenite::{Message, Result}};
+use crate::app::DbusCommand;
 
 use crate::enums::led_type::LEDType;
 use crate::handlers::bluetooth_handler::{BluetoothDevice, connect_to_bluetooth_device, disconnect_bluetooth_device, pair_with_bluetooth_device, start_bluetooth_scanning, stop_bluetooth_scanning, unpair_bluetooth_device};
@@ -29,25 +35,19 @@ struct BluetoothDeviceData {
     address: String,
 }
 
-pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, mut rx: Receiver<NotificationResponse>) -> Result<()> {
+pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, mut rx: Receiver<NotificationResponse>, tx_dbus: Sender<DbusCommand>) -> Result<()> {
     let ws_stream = accept_async(stream).await.expect("Failed to accept");
     info!("New WebSocket connection: {}", peer);
-
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
-    let (tx, mut rx_scanning) = mpsc::channel::<BluetoothDevice>(12);
 
     loop {
         tokio::select! {
             message = rx.recv() => {
                 if let Ok(received_notification) = message {
-                    let notification = NotificationData {
-                        message: received_notification.data,
-                        timestamp: format!("{}", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S")),
-                    };
                     let ws_message = WebSocketMessage {
-                        op: 1, // Op code 1 for notifications
+                        op: received_notification.op,
                         t: Some(received_notification.title),
-                        d: serde_json::to_value(notification).unwrap(),
+                        d: received_notification.data,
                     };
                     if let Ok(json_msg) = serde_json::to_string(&ws_message) {
                         ws_sender.send(Message::Text(json_msg)).await?;
@@ -86,10 +86,11 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, mut rx: Rece
                                             match event.as_str() {
                                                 "START_SCANNING" => {
                                                         info!("Starting bluetooth scanning");
-                                                    start_bluetooth_scanning(tx.clone()).await.expect("Failed to start bluetooth scanning");
+                                                        tx_dbus.send(DbusCommand::BLUEZ("StartDiscovery".to_string())).await.expect("Failed to send dbus command");
                                                 },
                                                 "STOP_SCANNING" => {
-                                                    stop_bluetooth_scanning().await.expect("Failed to stop bluetooth scanning");
+                                                        info!("Stopping bluetooth scanning");
+                                                        tx_dbus.send(DbusCommand::BLUEZ("StopDiscovery".to_string())).await.expect("Failed to send dbus command");
                                                 },
                                                 "CONNECT" => {
                                                     if let Ok(device) = serde_json::from_value::<BluetoothDeviceData>(parsed_message.d) {
@@ -125,18 +126,6 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, mut rx: Rece
                 }
                 }
             }
-            new_device = rx_scanning.recv() => {
-                if let Some(device) = new_device {
-                    let ws_message = WebSocketMessage {
-                        op: 2, // Op code 3 for sending a single device
-                        t: Some("NEW_DEVICE_FOUND".to_string()),
-                        d: serde_json::to_value(device).unwrap(),
-                    };
-                    if let Ok(json_msg) = serde_json::to_string(&ws_message) {
-                        ws_sender.send(Message::Text(json_msg)).await?;
-                    }
-                }
-            },
         }
     }
 

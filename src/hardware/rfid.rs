@@ -5,6 +5,7 @@ use linux_embedded_hal::spidev::{SpidevOptions, SpiModeFlags};
 use linux_embedded_hal::sysfs_gpio::Direction;
 use mfrc522::comm::eh02::spi::SpiInterface;
 use mfrc522::Mfrc522;
+use serde_json::json;
 use tokio::sync::broadcast::Sender;
 use tokio::sync::oneshot;
 
@@ -45,18 +46,17 @@ pub async fn control_rfid(tx: Sender<NotificationResponse>, mut shutdown_rx: one
     loop {
         if let Ok(atqa) = mfrc522.reqa() {
             if let Ok(uid) = mfrc522.select(&atqa) {
-                let uid_str = format!("UID: {:?}", uid.as_bytes());
+                let uid_str = format!("{:?}", uid.as_bytes());
 
                 // Check if the UID is different from the last sent or if 5 seconds have passed
                 if last_uid.as_ref() != Some(&uid_str) || last_sent.elapsed() >= Duration::from_secs(5) {
-                    log::info!("{}", &uid_str);
-
                     let notif = NotificationResponse {
                         title: "RFID_DETECT".to_string(),
-                        data: uid_str.to_string(),
+                        op: 1,
+                        data: json!(uid.as_bytes()),
                     };
 
-                    tx.send(notif).unwrap(); // Send UID over the channel
+                    tx.send(notif).unwrap();
                     last_uid = Some(uid_str);
                     last_sent = Instant::now();
                 }
@@ -86,7 +86,8 @@ pub async fn test(tx: Sender<NotificationResponse>, mut shutdown_rx: oneshot::Re
 
         let notif = NotificationResponse {
             title: "RFID_DETECT".to_string(),
-            data: "Test".to_string(),
+            op: 1,
+            data: json!("Test"),
         };
 
         tx.send(notif).unwrap();
