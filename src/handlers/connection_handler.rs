@@ -10,8 +10,8 @@ use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::{
     accept_async,
     tungstenite::{Message, Result}};
-use crate::enums::dbus_command::DbusCommand;
 
+use crate::enums::dbus_command::DbusCommand;
 use crate::enums::led_type::LEDType;
 use crate::hardware::led;
 use crate::models::notification_response::NotificationResponse;
@@ -33,7 +33,7 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, mut rx: Rece
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
     let tx_dbus2 = tx_dbus.clone();
-    tx_dbus2.send(DbusCommand::GetAllDevices).await.expect("Failed to send dbus command");
+    tx_dbus2.send(DbusCommand::GetAllBluetoothDevices).await.expect("Failed to send dbus command");
 
     loop {
         tokio::select! {
@@ -89,32 +89,32 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, mut rx: Rece
                                                 },
                                                 "CONNECT" => {
                                                     if let Ok(device) = serde_json::from_value::<BluetoothDeviceData>(parsed_message.d) {
-                                                            tx_dbus.send(DbusCommand::ConnectDevice(device.address)).await.expect("Failed to send dbus command");
+                                                            tx_dbus.send(DbusCommand::ConnectBluetoothDevice(device.address)).await.expect("Failed to send dbus command");
                                                     }
                                                 },
                                                 "DISCONNECT" => {
                                                     if let Ok(device) = serde_json::from_value::<BluetoothDeviceData>(parsed_message.d) {
-                                                            tx_dbus.send(DbusCommand::DisconnectDevice(device.address)).await.expect("Failed to send dbus command");
+                                                            tx_dbus.send(DbusCommand::DisconnectBluetoothDevice(device.address)).await.expect("Failed to send dbus command");
                                                     }
                                                 },
                                                 "PAIR" => {
                                                     if let Ok(device) = serde_json::from_value::<BluetoothDeviceData>(parsed_message.d) {
-                                                            tx_dbus.send(DbusCommand::PairDevice(device.address)).await.expect("Failed to send dbus command");
+                                                            tx_dbus.send(DbusCommand::PairBluetoothDevice(device.address)).await.expect("Failed to send dbus command");
                                                     }
                                                 },
                                                 "UNPAIR" => {
                                                     if let Ok(device) = serde_json::from_value::<BluetoothDeviceData>(parsed_message.d) {
-                                                            tx_dbus.send(DbusCommand::UnpairDevice(device.address)).await.expect("Failed to send dbus command");
+                                                            tx_dbus.send(DbusCommand::UnpairBluetoothDevice(device.address)).await.expect("Failed to send dbus command");
                                                     }
                                                 },
                                                 "TRUST" => {
                                                     if let Ok(device) = serde_json::from_value::<BluetoothDeviceData>(parsed_message.d) {
-                                                            tx_dbus.send(DbusCommand::TrustDevice(device.address)).await.expect("Failed to send dbus command");
+                                                            tx_dbus.send(DbusCommand::TrustBluetoothDevice(device.address)).await.expect("Failed to send dbus command");
                                                     }
                                                 },
                                                 "UNTRUST" => {
                                                     if let Ok(device) = serde_json::from_value::<BluetoothDeviceData>(parsed_message.d) {
-                                                            tx_dbus.send(DbusCommand::UntrustDevice(device.address)).await.expect("Failed to send dbus command");
+                                                            tx_dbus.send(DbusCommand::UntrustBluetoothDevice(device.address)).await.expect("Failed to send dbus command");
                                                     }
                                                 },
                                                 _ => {}
