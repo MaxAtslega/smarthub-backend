@@ -34,8 +34,6 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, mut rx: Rece
 
     let tx_dbus2 = tx_dbus.clone();
     tx_dbus2.send(DbusCommand::GetAllBluetoothDevices).await.expect("Failed to send dbus command");
-    tx_dbus2.send(DbusCommand::GetCurrentNetwork).await.expect("Failed to send dbus command");
-
     loop {
         tokio::select! {
             message = rx.recv() => {
