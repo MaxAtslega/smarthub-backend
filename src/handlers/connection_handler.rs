@@ -23,6 +23,12 @@ struct LEDControlData {
 }
 
 #[derive(Serialize, Deserialize)]
+struct WlanData {
+    ssid: String,
+    password: String
+}
+
+#[derive(Serialize, Deserialize)]
 struct BluetoothDeviceData {
     address: String,
 }
@@ -85,6 +91,13 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::s
                                                     },
                                                     "SCAN_WIFI" => {
                                                         tx_dbus.send(SystemCommand::WlanScan).await.expect("Failed to send dbus command");
+                                                    },
+                                                    "CONNECT_WIFI" => {
+                                                        if let Some(message) = parsed_message.d {
+                                                            if let Ok(wifi_data) = serde_json::from_value::<WlanData>(message) {
+                                                                tx_dbus.send(SystemCommand::ConnectWifi(wifi_data.ssid, wifi_data.password )).await.expect("Failed to send dbus command");
+                                                            }
+                                                        }
                                                     },
                                                     _ => {}
                                                 }

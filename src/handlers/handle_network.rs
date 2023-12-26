@@ -1,6 +1,8 @@
 use std::error::Error;
+use std::fs;
 use libc::printf;
 use serde_json::json;
+use tokio::process::Command;
 use tokio::sync::broadcast::Sender;
 use crate::models::notification_response::NotificationResponse;
 use crate::network::interfaces::get_interfaces;
@@ -47,6 +49,34 @@ pub async fn scan_wifi(tx: Sender<NotificationResponse>) -> Result<(), Box<dyn E
 
         tx.send(notification).expect("Failed to send notification");
     }
+
+    Ok(())
+}
+
+async fn create_wpa_supplicant_conf(ssid: String, psk: String) -> Result<(), Box<dyn Error>> {
+    let config = format!(
+        "network={{\n\tssid=\"{}\"\n\tpsk=\"{}\"\n}}",
+        ssid,
+        psk
+    );
+
+    fs::write("/etc/wpa_supplicant/wpa_supplicant.conf", config)?;
+    Ok(())
+}
+
+async fn restart_wpa_supplicant() -> Result<(), Box<dyn Error>> {
+    Command::new("systemctl")
+        .args(&["restart", "wpa_supplicant"])
+        .status()
+        .await?;
+
+    Ok(())
+}
+
+
+pub async fn connect_to_wifi(ssid: String, psk: String) -> Result<(), Box<dyn Error>> {
+    create_wpa_supplicant_conf(ssid, psk).await?;
+    restart_wpa_supplicant().await?;
 
     Ok(())
 }

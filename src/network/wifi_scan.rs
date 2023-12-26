@@ -1,6 +1,6 @@
 use std::{env};
-use std::process::{Command};
 use serde_derive::{Deserialize, Serialize};
+use tokio::process::Command;
 use crate::common::error::Error;
 
 #[derive(Debug, PartialEq, Eq, Default, Clone, Serialize, Deserialize)]
@@ -23,6 +23,7 @@ pub async fn scan() -> Result<Vec<Wifi>, Error> {
         .env(PATH_ENV, path.clone())
         .arg("dev")
         .output()
+        .await
         .map_err(|_| Error::CommandNotFound)?;
     let data = String::from_utf8_lossy(&output.stdout);
     let interface = parse_iw_dev(&data)?;
@@ -33,6 +34,7 @@ pub async fn scan() -> Result<Vec<Wifi>, Error> {
         .arg(interface)
         .arg("scan")
         .output()
+        .await
         .map_err(|_| Error::CommandNotFound)?;
     if !output.status.success() {
         return Err(Error::CommandFailed(

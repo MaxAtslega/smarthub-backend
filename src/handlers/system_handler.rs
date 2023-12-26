@@ -14,7 +14,7 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::enums::system_command::SystemCommand;
 use crate::handlers::bluetooth_handler::{handle_bluetooth_device_command, handle_bluetooth_discovery_command, handle_get_all_bluetooth_devices_command, send_bluetooth_device_boned_event, send_bluetooth_device_connected_event, send_bluetooth_device_paired_event, send_bluetooth_device_trusted_event, send_bluetooth_discover_event, send_new_bluetooth_device_event};
-use crate::handlers::handle_network::{get_network_interfaces, scan_wifi};
+use crate::handlers::handle_network::{connect_to_wifi, get_network_interfaces, scan_wifi};
 use crate::handlers::update_handler::{get_available_updates, perform_system_update};
 use crate::models::notification_response::NotificationResponse;
 
@@ -87,6 +87,11 @@ async fn handle_dbus_commands(mut rx: Receiver<SystemCommand>, conn: Arc<SyncCon
             SystemCommand::WlanScan => {
                 if let Err(e) = scan_wifi(tx.clone()).await {
                      error!("Failed to perform system update: {}", e);
+                }
+            }
+            SystemCommand::ConnectWifi(ssid, psk) => {
+                if let Err(e) = connect_to_wifi(ssid, psk).await {
+                    error!("Failed to perform system update: {}", e);
                 }
             }
         }

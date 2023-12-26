@@ -1,7 +1,8 @@
 use std::error::Error;
-use std::io::{BufRead, BufReader};
-use std::process::{Command, Stdio};
+use tokio::io::{AsyncBufReadExt, BufReader};
+use std::process::{Stdio};
 use std::time::{Duration, Instant};
+use tokio::process::Command;
 
 use serde_json::json;
 use tokio::sync::broadcast::Sender;
@@ -21,37 +22,30 @@ pub async fn get_available_updates(tx: Sender<NotificationResponse>) -> Result<(
         .args(&["-c", "apt update"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
+        .status().await;
 
     println!("apt update finished with status: {:?}", update_status);
 
-    let child = Command::new("sh")
+    let mut child = Command::new("sh")
         .args(&["-c", "apt list --upgradable -a"])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()
-        .expect("Failed to spawn command");
+        .spawn().expect("Failed to spawn apt list command");
 
-    let stdout = BufReader::new(child.stdout.unwrap());
-    let start = Instant::now();
+    let mut stdout = BufReader::new(child.stdout.take().unwrap()).lines();
 
-    for line in stdout.lines() {
-        match line {
-            Ok(line) => {
-                if line.contains("Listing...") || line.is_empty() {
-                    continue;
-                }
-
-                let notification = NotificationResponse {
-                    op: 4,
-                    title: "UPDATE_AVAILABLE".to_string(),
-                    data: json!({"message": line}),
-                };
-
-                tx.send(notification).expect("Failed to send notification");
-            }
-            Err(e) => {}
+    while let Some(line) = stdout.next_line().await? {
+        if line.contains("Listing...") || line.is_empty() {
+            continue;
         }
+
+        let notification = NotificationResponse {
+            op: 4,
+            title: "UPDATE_AVAILABLE".to_string(),
+            data: json!({"message": line}),
+        };
+
+        tx.send(notification).expect("Failed to send notification");
     }
 
     let notification = NotificationResponse {
@@ -74,14 +68,12 @@ pub async fn perform_system_update(tx: Sender<NotificationResponse>) -> Result<(
     tx.send(notification).expect("Failed to send notification");
 
 
-    std::thread::sleep(Duration::from_millis(10000));
-
     // Execute the update command
     let update_status = Command::new("sh")
         .args(&["-c", "apt-get upgrade -y"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
+        .status().await;
 
     match update_status {
         Ok(status) if status.success() => {
