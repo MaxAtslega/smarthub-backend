@@ -1,4 +1,4 @@
-pub(crate) enum DbusCommand {
+pub(crate) enum SystemCommand {
     BluetoothDiscovering(String),
     GetAllBluetoothDevices,
     ConnectBluetoothDevice(String),
@@ -7,4 +7,8 @@ pub(crate) enum DbusCommand {
     UnpairBluetoothDevice(String),
     TrustBluetoothDevice(String),
     UntrustBluetoothDevice(String),
+    UpdateSystem,
+    ListingSystemUpdates,
+    GetNetworkInterfaces,
+    WlanScan,
 }

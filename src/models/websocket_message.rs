@@ -6,5 +6,5 @@ pub struct WebSocketMessage {
     // Event type
     pub op: u8,
     // Operation code
-    pub d: serde_json::Value, // Data
+    pub d: Option<serde_json::Value>, // Data
 }

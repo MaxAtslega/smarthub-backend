@@ -1,29 +1,25 @@
-extern crate dbus;
-
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;
-use std::time::Duration;
 
-use dbus::arg::{Dict, PropMap, RefArg, Variant};
+use dbus::arg::{RefArg, Variant};
 use dbus::Message;
 use dbus::message::MatchRule;
-use dbus::nonblock::{NonblockReply, Proxy, SyncConnection};
-use dbus::nonblock::stdintf::org_freedesktop_dbus::Properties;
+use dbus::nonblock::SyncConnection;
 use dbus_tokio::connection;
 use futures::channel::mpsc::UnboundedReceiver;
-use futures_util::stream::ForEach;
 use log::{error, info};
-use serde_json::json;
 use tokio::sync::broadcast::Sender;
 use tokio::sync::mpsc::Receiver;
 
-use crate::enums::dbus_command::DbusCommand;
+use crate::enums::system_command::SystemCommand;
 use crate::handlers::bluetooth_handler::{handle_bluetooth_device_command, handle_bluetooth_discovery_command, handle_get_all_bluetooth_devices_command, send_bluetooth_device_boned_event, send_bluetooth_device_connected_event, send_bluetooth_device_paired_event, send_bluetooth_device_trusted_event, send_bluetooth_discover_event, send_new_bluetooth_device_event};
+use crate::handlers::handle_network::{get_network_interfaces, scan_wifi};
+use crate::handlers::update_handler::{get_available_updates, perform_system_update};
 use crate::models::notification_response::NotificationResponse;
 
 #[tokio::main]
-pub async fn dbus_handler(tx: tokio::sync::broadcast::Sender<NotificationResponse>, rx_dbus: Receiver<DbusCommand>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn system_handler(tx: tokio::sync::broadcast::Sender<NotificationResponse>, rx_dbus: Receiver<SystemCommand>) -> Result<(), Box<dyn std::error::Error>> {
     let (resource, conn) = connection::new_system_sync()?;
 
     tokio::spawn(async {
@@ -46,33 +42,53 @@ pub async fn dbus_handler(tx: tokio::sync::broadcast::Sender<NotificationRespons
     Ok(())
 }
 
-async fn handle_dbus_commands(mut rx: Receiver<DbusCommand>, conn: Arc<SyncConnection>, tx: tokio::sync::broadcast::Sender<NotificationResponse>) {
+async fn handle_dbus_commands(mut rx: Receiver<SystemCommand>, conn: Arc<SyncConnection>, tx: tokio::sync::broadcast::Sender<NotificationResponse>) {
     while let Some(command) = rx.recv().await {
         match command {
-            DbusCommand::BluetoothDiscovering(msg) => {
+            SystemCommand::BluetoothDiscovering(msg) => {
                 handle_bluetooth_discovery_command(&conn, msg).await;
             },
-            DbusCommand::ConnectBluetoothDevice(device_path) => {
+            SystemCommand::ConnectBluetoothDevice(device_path) => {
                 handle_bluetooth_device_command(&conn, &device_path, "Connect").await;
             },
-            DbusCommand::DisconnectBluetoothDevice(device_path) => {
+            SystemCommand::DisconnectBluetoothDevice(device_path) => {
                 handle_bluetooth_device_command(&conn, &device_path, "Disconnect").await;
             },
-            DbusCommand::PairBluetoothDevice(device_path) => {
+            SystemCommand::PairBluetoothDevice(device_path) => {
                 handle_bluetooth_device_command(&conn, &device_path, "Pair").await;
             },
-            DbusCommand::UnpairBluetoothDevice(device_path) => {
+            SystemCommand::UnpairBluetoothDevice(device_path) => {
                 handle_bluetooth_device_command(&conn, &device_path, "Unpair").await;
             },
-            DbusCommand::TrustBluetoothDevice(device_path) => {
+            SystemCommand::TrustBluetoothDevice(device_path) => {
                 handle_bluetooth_device_command(&conn, &device_path, "Trust").await;
             },
-            DbusCommand::UntrustBluetoothDevice(device_path) => {
+            SystemCommand::UntrustBluetoothDevice(device_path) => {
                 handle_bluetooth_device_command(&conn, &device_path, "Untrust").await;
             },
-            DbusCommand::GetAllBluetoothDevices => {
+            SystemCommand::GetAllBluetoothDevices => {
                 handle_get_all_bluetooth_devices_command(&conn, tx.clone()).await;
-            },
+            }
+            SystemCommand::UpdateSystem => {
+                if let Err(e) = perform_system_update(tx.clone()).await {
+                    error!("Failed to perform system update: {}", e);
+                }
+            }
+            SystemCommand::ListingSystemUpdates => {
+                if let Err(e) = get_available_updates(tx.clone()).await {
+                    error!("Failed to perform system update: {}", e);
+                }
+            }
+            SystemCommand::GetNetworkInterfaces => {
+                if let Err(e) = get_network_interfaces(tx.clone()).await {
+                    error!("Failed to perform system update: {}", e);
+                }
+            }
+            SystemCommand::WlanScan => {
+                if let Err(e) = scan_wifi(tx.clone()).await {
+                     error!("Failed to perform system update: {}", e);
+                }
+            }
         }
     }
 }

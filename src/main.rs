@@ -1,4 +1,6 @@
+#![feature(ptr_metadata)]
 extern crate dbus;
+
 #[macro_use]
 extern crate diesel;
 
@@ -13,6 +15,7 @@ mod hardware;
 mod common;
 mod enums;
 mod handlers;
+mod network;
 
 fn main() {
     let conf = Config::from_any().unwrap();

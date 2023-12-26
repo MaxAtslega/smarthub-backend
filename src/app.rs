@@ -3,8 +3,8 @@ use tokio::sync::{broadcast, oneshot};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{Config, websocket};
-use crate::enums::dbus_command::DbusCommand;
-use crate::handlers::dbus_handler;
+use crate::enums::system_command::SystemCommand;
+use crate::handlers::system_handler;
 use crate::hardware::rfid;
 use crate::models::notification_response::NotificationResponse;
 
@@ -14,24 +14,26 @@ pub async fn launch(conf: &Config) {
     info!("Starting App in {}", conf.app.environment);
 
     let (tx, rx1) = broadcast::channel::<NotificationResponse>(10);
-    let (tx_dbus, mut rx_dbus): (Sender<DbusCommand>, Receiver<DbusCommand>) = channel::<DbusCommand>(32);
+    let (tx_dbus, rx_dbus): (Sender<SystemCommand>, Receiver<SystemCommand>) = channel::<SystemCommand>(32);
+
     let tx2 = tx.clone();
+    let tx3 = tx.clone();
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
     let control_rfid_handle = tokio::task::spawn_blocking(|| {
-        if let Err(e) = rfid::control_rfid(tx, shutdown_rx) {
+        if let Err(e) = rfid::test(tx, shutdown_rx) {
             error!("Failed in control_rfid: {}", e);
         }
     });
 
     let control_bluetooth_handle = tokio::task::spawn_blocking(|| {
-        if let Err(e) = dbus_handler::dbus_handler(tx2, rx_dbus) {
+        if let Err(e) = system_handler::system_handler(tx2, rx_dbus) {
             error!("Failed in bluetooth_handler: {}", e);
         }
     });
 
-    websocket::init(&conf.websocket, rx1, tx_dbus).await.expect("Failed to start websocket server");
+    websocket::init(&conf.websocket, tx3, rx1, tx_dbus).await.expect("Failed to start websocket server");
 
     // Send shutdown signal
     let _ = shutdown_tx.send(());
