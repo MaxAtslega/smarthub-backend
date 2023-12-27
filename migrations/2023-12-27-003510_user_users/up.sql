@@ -1,5 +1,5 @@
 CREATE TABLE user_users (
-    id INTEGER PRIMARY KEY,
+    id INTEGER NOT NULL PRIMARY KEY,
     username TEXT NOT NULL,
     theme INT NOT NULL,
     language TEXT NOT NULL,

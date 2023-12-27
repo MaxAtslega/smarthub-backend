@@ -2,7 +2,7 @@
 
 diesel::table! {
     user_actions (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         user_id -> Integer,
         type_name -> Text,
         details -> Text,
@@ -12,7 +12,7 @@ diesel::table! {
 
 diesel::table! {
     user_requests (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         action_id -> Integer,
         endpoint -> Text,
         parameters -> Text,
@@ -22,7 +22,7 @@ diesel::table! {
 
 diesel::table! {
     user_rfid (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         rfid_uid -> Text,
         action_id -> Integer,
         created_on -> Timestamp,
@@ -31,7 +31,7 @@ diesel::table! {
 
 diesel::table! {
     user_users (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         username -> Text,
         theme -> Integer,
         language -> Text,

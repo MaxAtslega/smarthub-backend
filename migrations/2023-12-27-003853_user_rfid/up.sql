@@ -1,5 +1,5 @@
 CREATE TABLE user_rfid (
-    id INTEGER PRIMARY KEY,
+    id INTEGER NOT NULL PRIMARY KEY,
     rfid_uid VARCHAR NOT NULL,
     action_id INT NOT NULL,
     created_on TIMESTAMP NOT NULL,
