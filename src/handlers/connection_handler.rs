@@ -2,7 +2,7 @@ use std::{io, net::SocketAddr};
 use std::process::Command;
 
 use futures_util::{SinkExt, StreamExt};
-use log::{error, info};
+use log::{debug, error, info};
 use serde_derive::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::Receiver;
@@ -174,7 +174,7 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::s
 
 
 fn reboot_system() -> io::Result<()> {
-    println!("Rebooting system...");
+    debug!("Rebooting system...");
     Command::new("sudo")
         .arg("reboot")
         .status()?;

@@ -52,7 +52,7 @@ pub async fn handle_bluetooth_device_command(conn: &Arc<SyncConnection>, device_
     let proxy = nonblock::Proxy::new("org.bluez", device_path, Duration::from_secs(5), conn.clone());
     match proxy.method_call::<(), (), _, _>("org.bluez.Device1", method, ()).await {
         Ok(_) => debug!("{} successfully", method),
-        Err(e) => debug!("Error in {}: {}", method, e),
+        Err(e) => error!("Error in {}: {}", method, e),
     }
 }
 
@@ -60,7 +60,7 @@ pub async fn handle_bluetooth_discovery_command(conn: &Arc<SyncConnection>, msg:
     let proxy = nonblock::Proxy::new("org.bluez", "/org/bluez/hci0", Duration::from_secs(5), conn.clone());
     match proxy.method_call::<(), (), _, _>("org.bluez.Adapter1", msg, ()).await {
         Ok(_) => debug!("Discovery started successfully"),
-        Err(e) => debug!("Error starting discovery: {}", e),
+        Err(e) => error!("Error starting discovery: {}", e),
     };
 }
 
@@ -97,7 +97,7 @@ pub async fn handle_get_all_bluetooth_devices_command(conn: &Arc<SyncConnection>
                 }
             }
         }
-        Err(e) => eprintln!("Error: {}", e),
+        Err(e) => error!("Error getting managed objects in bluetooth: {}", e),
     }
 }
 
@@ -146,7 +146,7 @@ pub fn send_bluetooth_device_boned_event(tx: &Sender<WebSocketMessage>, msg: &Me
 
                 tx.send(notif).unwrap();
             }
-            Err(e) => eprintln!("Error getting device name: {}", e),
+            Err(e) => error!("Error getting device name: {}", e),
         }
     });
 }
@@ -176,7 +176,7 @@ pub fn send_bluetooth_device_paired_event(tx: &Sender<WebSocketMessage>, msg: &M
 
                 tx.send(notif).unwrap();
             }
-            Err(e) => eprintln!("Error getting device name: {}", e),
+            Err(e) => error!("Error getting device name: {}", e),
         }
     });
 }
@@ -206,7 +206,7 @@ pub fn send_bluetooth_device_trusted_event(tx: &Sender<WebSocketMessage>, msg: &
 
                 tx.send(notif).unwrap();
             }
-            Err(e) => eprintln!("Error getting device name: {}", e),
+            Err(e) => error!("Error getting device name: {}", e),
         }
     });
 }
@@ -226,7 +226,7 @@ pub fn send_new_bluetooth_device_event(tx: &Sender<WebSocketMessage>, msg: &Mess
 
                 tx.send(notif).unwrap();
             }
-            Err(e) => eprintln!("Error getting device name: {}", e),
+            Err(e) => error!("Error getting device name: {}", e),
         }
     });
 }

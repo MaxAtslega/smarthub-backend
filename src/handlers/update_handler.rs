@@ -2,6 +2,7 @@ use std::error::Error;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use std::process::{Stdio};
 use std::time::{Duration, Instant};
+use log::debug;
 use tokio::process::Command;
 
 use serde_json::json;
@@ -23,7 +24,7 @@ pub async fn get_available_updates(tx: Sender<WebSocketMessage>) -> Result<(), B
         .stderr(Stdio::null())
         .status().await;
 
-    println!("apt update finished with status: {:?}", update_status);
+    debug!("apt update finished with status: {:?}", update_status);
 
     let mut child = Command::new("sh")
         .args(&["-c", "apt list --upgradable -a"])

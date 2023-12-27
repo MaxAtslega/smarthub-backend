@@ -3,6 +3,6 @@ CREATE TABLE user_actions (
     user_id INT NOT NULL,
     type_name VARCHAR NOT NULL,
     details TEXT NOT NULL,
-    created_on TIMESTAMP NOT NULL,
+    created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES user_users (id)
 );
