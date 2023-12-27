@@ -32,7 +32,7 @@ struct BluetoothDeviceData {
     address: String,
 }
 
-pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::sync::broadcast::Sender<WebSocketMessage>, mut rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>) -> Result<()> {
+pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::sync::broadcast::Sender<WebSocketMessage>, mut rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>) -> Result<()> {
     let ws_stream = accept_async(stream).await.expect("Failed to accept");
     info!("New WebSocket connection: {}", peer);
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();

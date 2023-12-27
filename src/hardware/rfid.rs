@@ -72,21 +72,3 @@ pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot
 
     Ok(())
 }
-
-
-#[tokio::main]
-pub async fn test(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
-    loop {
-        let notif = WebSocketMessage {
-            t: Some("RFID_DETECT".to_string()),
-            op: 1,
-            d: Some(json!("uid.as_bytes()")),
-        };
-
-        tx.send(notif).unwrap();
-
-        std::thread::sleep(Duration::from_millis(2000));
-    }
-
-    Ok(())
-}

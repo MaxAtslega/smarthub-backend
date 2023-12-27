@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::slice::from_raw_parts;
-use libc::{if_nametoindex, sockaddr_in, sockaddr_in6, sockaddr_ll, strlen};
+use libc::{if_nametoindex, sockaddr_in, sockaddr_in6, sockaddr_ll, strlen, AF_INET, AF_INET6, AF_PACKET};
 use crate::common::error::Error;
 use crate::common::unix::{ipv4_from_in_addr, ipv6_from_in6_addr, make_ipv4_netmask, make_ipv6_netmask};
 use crate::models::interface::NetworkInterface;
 use crate::network::getifaddrs::getifaddrs;
+
 
 pub fn get_interfaces() -> Result<Vec<NetworkInterface>, Error> {
     let mut network_interfaces: HashMap<String, NetworkInterface> = HashMap::new();

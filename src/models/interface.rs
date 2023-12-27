@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 pub type Netmask<T> = Option<T>;
 
@@ -72,33 +72,6 @@ impl NetworkInterface {
             addr: vec![Addr::V6(ifaddr_v6)],
             mac_addr: None,
             index,
-        }
-    }
-
-    pub fn with_mac_addr(self, mac_addr: Option<String>) -> Self {
-        Self { mac_addr, ..self }
-    }
-}
-
-impl Addr {
-    pub fn ip(self) -> IpAddr {
-        match self {
-            Addr::V4(ifaddr_v4) => ifaddr_v4.ip.into(),
-            Addr::V6(ifaddr_v6) => ifaddr_v6.ip.into(),
-        }
-    }
-
-    pub fn broadcast(self) -> Option<IpAddr> {
-        match self {
-            Addr::V4(ifaddr_v4) => ifaddr_v4.broadcast.map(Into::into),
-            Addr::V6(ifaddr_v6) => ifaddr_v6.broadcast.map(Into::into),
-        }
-    }
-
-    pub fn netmask(self) -> Netmask<IpAddr> {
-        match self {
-            Addr::V4(ifaddr_v4) => ifaddr_v4.netmask.map(Into::into),
-            Addr::V6(ifaddr_v6) => ifaddr_v6.netmask.map(Into::into),
         }
     }
 }

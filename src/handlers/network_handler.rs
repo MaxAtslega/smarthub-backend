@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::fs;
-use libc::printf;
 use serde_json::json;
 use tokio::process::Command;
 use tokio::sync::broadcast::Sender;

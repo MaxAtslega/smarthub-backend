@@ -11,7 +11,7 @@ use crate::enums::system_command::SystemCommand;
 use crate::handlers::connection_handler::handle_connection;
 use crate::models::websocket::WebSocketMessage;
 
-pub async fn init(web_socket_conf: &WebSocketConf, mut tx: tokio::sync::broadcast::Sender<WebSocketMessage>, rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>) -> Result<(), Error> {
+pub async fn init(web_socket_conf: &WebSocketConf, tx: tokio::sync::broadcast::Sender<WebSocketMessage>, rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>) -> Result<(), Error> {
     let address = format!("{}:{}", web_socket_conf.address, web_socket_conf.port);
     let try_socket = TcpListener::bind(&address).await;
 

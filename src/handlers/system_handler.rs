@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::future::Future;
 use std::sync::Arc;
 
 use dbus::arg::{RefArg, Variant};
@@ -103,7 +102,7 @@ async fn handle_dbus_commands(mut rx: Receiver<SystemCommand>, conn: Arc<SyncCon
 async fn handle_dbus_events(tx: &Sender<WebSocketMessage>, conn: &Arc<SyncConnection>, stream: UnboundedReceiver<(Message, (String, ))>) {
     use futures_util::stream::StreamExt;
 
-    let stream = stream.for_each(|(msg, (source, )): (Message, (String, ))| {
+    let stream = stream.for_each(|(msg, (_source, )): (Message, (String, ))| {
         let conn_clone = conn.clone();
         if let Ok((interface, changed_properties)) = msg.read2::<String, HashMap<String, Variant<Box<dyn RefArg>>>>() {
             if interface == "org.bluez.Device1" {
