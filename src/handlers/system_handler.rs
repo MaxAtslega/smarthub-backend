@@ -16,10 +16,10 @@ use crate::enums::system_command::SystemCommand;
 use crate::handlers::bluetooth_handler::{handle_bluetooth_device_command, handle_bluetooth_discovery_command, handle_get_all_bluetooth_devices_command, send_bluetooth_device_boned_event, send_bluetooth_device_connected_event, send_bluetooth_device_paired_event, send_bluetooth_device_trusted_event, send_bluetooth_discover_event, send_new_bluetooth_device_event};
 use crate::handlers::network_handler::{connect_to_wifi, get_network_interfaces, scan_wifi};
 use crate::handlers::update_handler::{get_available_updates, perform_system_update};
-use crate::models::notification_response::NotificationResponse;
+use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
-pub async fn system_handler(tx: tokio::sync::broadcast::Sender<NotificationResponse>, rx_dbus: Receiver<SystemCommand>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn system_handler(tx: tokio::sync::broadcast::Sender<WebSocketMessage>, rx_dbus: Receiver<SystemCommand>) -> Result<(), Box<dyn std::error::Error>> {
     let (resource, conn) = connection::new_system_sync()?;
 
     tokio::spawn(async {
@@ -42,7 +42,7 @@ pub async fn system_handler(tx: tokio::sync::broadcast::Sender<NotificationRespo
     Ok(())
 }
 
-async fn handle_dbus_commands(mut rx: Receiver<SystemCommand>, conn: Arc<SyncConnection>, tx: tokio::sync::broadcast::Sender<NotificationResponse>) {
+async fn handle_dbus_commands(mut rx: Receiver<SystemCommand>, conn: Arc<SyncConnection>, tx: tokio::sync::broadcast::Sender<WebSocketMessage>) {
     while let Some(command) = rx.recv().await {
         match command {
             SystemCommand::BluetoothDiscovering(msg) => {
@@ -100,7 +100,7 @@ async fn handle_dbus_commands(mut rx: Receiver<SystemCommand>, conn: Arc<SyncCon
 
 
 
-async fn handle_dbus_events(tx: &Sender<NotificationResponse>, conn: &Arc<SyncConnection>, stream: UnboundedReceiver<(Message, (String, ))>) {
+async fn handle_dbus_events(tx: &Sender<WebSocketMessage>, conn: &Arc<SyncConnection>, stream: UnboundedReceiver<(Message, (String, ))>) {
     use futures_util::stream::StreamExt;
 
     let stream = stream.for_each(|(msg, (source, )): (Message, (String, ))| {

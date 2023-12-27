@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebSocketMessage {
     pub t: Option<String>,
     // Event type

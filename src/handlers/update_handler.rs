@@ -6,14 +6,13 @@ use tokio::process::Command;
 
 use serde_json::json;
 use tokio::sync::broadcast::Sender;
+use crate::models::websocket::WebSocketMessage;
 
-use crate::models::notification_response::NotificationResponse;
-
-pub async fn get_available_updates(tx: Sender<NotificationResponse>) -> Result<(), Box<dyn Error>> {
-    let notification = NotificationResponse {
+pub async fn get_available_updates(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error>> {
+    let notification = WebSocketMessage {
         op: 4,
-        title: "START_LISTING_UPDATE".to_string(),
-        data: json!({"message": "Start listing updates"}),
+        t: Some("START_LISTING_UPDATE".to_string()),
+        d: Some(json!({"message": "Start listing updates"})),
     };
 
     tx.send(notification).expect("Failed to send notification");
@@ -39,19 +38,19 @@ pub async fn get_available_updates(tx: Sender<NotificationResponse>) -> Result<(
             continue;
         }
 
-        let notification = NotificationResponse {
+        let notification = WebSocketMessage {
             op: 4,
-            title: "UPDATE_AVAILABLE".to_string(),
-            data: json!({"message": line}),
+            t: Some("UPDATE_AVAILABLE".to_string()),
+            d: Some(json!({"message": line})),
         };
 
         tx.send(notification).expect("Failed to send notification");
     }
 
-    let notification = NotificationResponse {
+    let notification = WebSocketMessage {
         op: 4,
-        title: "FINISHED_LISTING_UPDATE".to_string(),
-        data: json!({"message": "Finished listing updates"}),
+        t: Some("FINISHED_LISTING_UPDATE".to_string()),
+        d: Some(json!({"message": "Finished listing updates"})),
     };
 
     tx.send(notification).expect("Failed to send notification");
@@ -59,11 +58,11 @@ pub async fn get_available_updates(tx: Sender<NotificationResponse>) -> Result<(
     Ok(())
 }
 
-pub async fn perform_system_update(tx: Sender<NotificationResponse>) -> Result<(), Box<dyn Error>> {
-    let notification = NotificationResponse {
+pub async fn perform_system_update(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error>> {
+    let notification = WebSocketMessage {
         op: 4,
-        title: "START_UPDATE_PROCESS".to_string(),
-        data: json!({"message": "Starting system update process"}),
+        t: Some("START_UPDATE_PROCESS".to_string()),
+        d: Some(json!({"message": "Starting system update process"})),
     };
     tx.send(notification).expect("Failed to send notification");
 
@@ -77,18 +76,18 @@ pub async fn perform_system_update(tx: Sender<NotificationResponse>) -> Result<(
 
     match update_status {
         Ok(status) if status.success() => {
-            let success_notification = NotificationResponse {
+            let success_notification = WebSocketMessage {
                 op: 4,
-                title: "UPDATE_SUCCESS".to_string(),
-                data: json!({"message": "System update completed successfully"}),
+                t: Some("UPDATE_SUCCESS".to_string()),
+                d: Some(json!({"message": "System update completed successfully"})),
             };
             tx.send(success_notification).expect("Failed to send notification");
         }
         _ => {
-            let fail_notification = NotificationResponse {
+            let fail_notification = WebSocketMessage {
                 op: 4,
-                title: "UPDATE_FAILURE".to_string(),
-                data: json!({"message": "System update failed"}),
+                t: Some("UPDATE_FAILURE".to_string()),
+                d: Some(json!({"message": "System update failed"})),
             };
             tx.send(fail_notification).expect("Failed to send notification");
         }

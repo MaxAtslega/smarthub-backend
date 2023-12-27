@@ -10,10 +10,10 @@ use tokio::sync::broadcast::Sender;
 use tokio::sync::oneshot;
 
 use crate::common::utils;
-use crate::models::notification_response::NotificationResponse;
+use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
-pub async fn control_rfid(tx: Sender<NotificationResponse>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
+pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
     if !utils::is_raspberry_pi_4b() {
         return Err("This app is only compatible with Raspberry Pi 4 Model B".to_string());
     }
@@ -50,10 +50,10 @@ pub async fn control_rfid(tx: Sender<NotificationResponse>, mut shutdown_rx: one
 
                 // Check if the UID is different from the last sent or if 5 seconds have passed
                 if last_uid.as_ref() != Some(&uid_str) || last_sent.elapsed() >= Duration::from_secs(5) {
-                    let notif = NotificationResponse {
-                        title: "RFID_DETECT".to_string(),
+                    let notif = WebSocketMessage {
+                        t: Some("RFID_DETECT".to_string()),
                         op: 1,
-                        data: json!(uid.as_bytes()),
+                        d: Some(json!(uid.as_bytes())),
                     };
 
                     tx.send(notif).unwrap();
@@ -75,12 +75,12 @@ pub async fn control_rfid(tx: Sender<NotificationResponse>, mut shutdown_rx: one
 
 
 #[tokio::main]
-pub async fn test(tx: Sender<NotificationResponse>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
+pub async fn test(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
     loop {
-        let notif = NotificationResponse {
-            title: "RFID_DETECT".to_string(),
+        let notif = WebSocketMessage {
+            t: Some("RFID_DETECT".to_string()),
             op: 1,
-            data: json!("uid.as_bytes()"),
+            d: Some(json!("uid.as_bytes()")),
         };
 
         tx.send(notif).unwrap();

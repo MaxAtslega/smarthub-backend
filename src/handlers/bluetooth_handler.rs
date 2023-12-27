@@ -13,7 +13,7 @@ use serde_json::json;
 use tokio::sync::broadcast::Sender;
 use tokio::task;
 
-use crate::models::notification_response::NotificationResponse;
+use crate::models::websocket::WebSocketMessage;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BluetoothDevice {
@@ -64,7 +64,7 @@ pub async fn handle_bluetooth_discovery_command(conn: &Arc<SyncConnection>, msg:
     };
 }
 
-pub async fn handle_get_all_bluetooth_devices_command(conn: &Arc<SyncConnection>, tx: Sender<NotificationResponse>) {
+pub async fn handle_get_all_bluetooth_devices_command(conn: &Arc<SyncConnection>, tx: Sender<WebSocketMessage>) {
     let proxy = nonblock::Proxy::new("org.bluez", "/", Duration::from_secs(5), conn.clone());
     match proxy.get_managed_objects().await {
         Ok(objects) => {
@@ -87,10 +87,10 @@ pub async fn handle_get_all_bluetooth_devices_command(conn: &Arc<SyncConnection>
                         bonded,
                     };
 
-                    let notification = NotificationResponse {
-                        title: "DEVICE_INFO".to_string(),
+                    let notification = WebSocketMessage {
+                        t: Some("DEVICE_INFO".to_string()),
                         op: 2,
-                        data: json!(bluetooth_device),
+                        d: Some(json!(bluetooth_device)),
                     };
 
                     tx.send(notification).unwrap();
@@ -101,27 +101,27 @@ pub async fn handle_get_all_bluetooth_devices_command(conn: &Arc<SyncConnection>
     }
 }
 
-pub fn send_bluetooth_discover_event(tx: &Sender<NotificationResponse>, variant: &Variant<Box<dyn RefArg>>) {
+pub fn send_bluetooth_discover_event(tx: &Sender<WebSocketMessage>, variant: &Variant<Box<dyn RefArg>>) {
     let discovering = variant.0.as_u64().unwrap_or(0) != 0;
 
     let notif = if discovering {
-        NotificationResponse {
-            title: "DISCOVERY_STARTED".to_string(),
+        WebSocketMessage {
+            t: Some("DISCOVERY_STARTED".to_string()),
             op: 2,
-            data: json!(discovering),
+            d: Some(json!(discovering)),
         }
     } else {
-        NotificationResponse {
-            title: "DISCOVERY_STOPPED".to_string(),
+        WebSocketMessage {
+            t: Some("DISCOVERY_STOPPED".to_string()),
             op: 2,
-            data: json!(discovering),
+            d: Some(json!(discovering)),
         }
     };
 
     tx.send(notif).unwrap();
 }
 
-pub fn send_bluetooth_device_boned_event(tx: &Sender<NotificationResponse>, msg: &Message, conn_clone: &Arc<SyncConnection>, variant: &Variant<Box<dyn RefArg>>) {
+pub fn send_bluetooth_device_boned_event(tx: &Sender<WebSocketMessage>, msg: &Message, conn_clone: &Arc<SyncConnection>, variant: &Variant<Box<dyn RefArg>>) {
     let device_path = msg.path().unwrap().to_string();
     let bonded = variant.0.as_u64().unwrap_or(0) != 0;
     let tx = tx.clone();
@@ -131,16 +131,16 @@ pub fn send_bluetooth_device_boned_event(tx: &Sender<NotificationResponse>, msg:
         match get_bluetooth_device_properties(&conn_clone, &device_path).await {
             Ok(device) => {
                 let notif = if bonded {
-                    NotificationResponse {
-                        title: "DEVICE_BONDED".to_string(),
+                    WebSocketMessage {
+                        t: Some("DEVICE_BONDED".to_string()),
                         op: 2,
-                        data: json!(device),
+                        d: Some(json!(device)),
                     }
                 } else {
-                    NotificationResponse {
-                        title: "DEVICE_UNBONDED".to_string(),
+                    WebSocketMessage {
+                        t: Some("DEVICE_UNBONDED".to_string()),
                         op: 2,
-                        data: json!(device),
+                        d: Some(json!(device)),
                     }
                 };
 
@@ -151,7 +151,7 @@ pub fn send_bluetooth_device_boned_event(tx: &Sender<NotificationResponse>, msg:
     });
 }
 
-pub fn send_bluetooth_device_paired_event(tx: &Sender<NotificationResponse>, msg: &Message, conn_clone: &Arc<SyncConnection>, variant: &Variant<Box<dyn RefArg>>) {
+pub fn send_bluetooth_device_paired_event(tx: &Sender<WebSocketMessage>, msg: &Message, conn_clone: &Arc<SyncConnection>, variant: &Variant<Box<dyn RefArg>>) {
     let device_path = msg.path().unwrap().to_string();
     let paired = variant.0.as_u64().unwrap_or(0) != 0;
     let tx = tx.clone();
@@ -161,16 +161,16 @@ pub fn send_bluetooth_device_paired_event(tx: &Sender<NotificationResponse>, msg
         match get_bluetooth_device_properties(&conn_clone, &device_path).await {
             Ok(device) => {
                 let notif = if paired {
-                    NotificationResponse {
-                        title: "DEVICE_PAIRED".to_string(),
+                    WebSocketMessage {
+                        t: Some("DEVICE_PAIRED".to_string()),
                         op: 2,
-                        data: json!(device),
+                        d: Some(json!(device)),
                     }
                 } else {
-                    NotificationResponse {
-                        title: "DEVICE_UNPAIRED".to_string(),
+                    WebSocketMessage {
+                        t: Some("DEVICE_UNPAIRED".to_string()),
                         op: 2,
-                        data: json!(device),
+                        d: Some(json!(device)),
                     }
                 };
 
@@ -181,7 +181,7 @@ pub fn send_bluetooth_device_paired_event(tx: &Sender<NotificationResponse>, msg
     });
 }
 
-pub fn send_bluetooth_device_trusted_event(tx: &Sender<NotificationResponse>, msg: &Message, conn_clone: &Arc<SyncConnection>, variant: &Variant<Box<dyn RefArg>>) {
+pub fn send_bluetooth_device_trusted_event(tx: &Sender<WebSocketMessage>, msg: &Message, conn_clone: &Arc<SyncConnection>, variant: &Variant<Box<dyn RefArg>>) {
     let device_path = msg.path().unwrap().to_string();
     let trusted = variant.0.as_u64().unwrap_or(0) != 0;
     let tx = tx.clone();
@@ -191,16 +191,16 @@ pub fn send_bluetooth_device_trusted_event(tx: &Sender<NotificationResponse>, ms
         match get_bluetooth_device_properties(&conn_clone, &device_path).await {
             Ok(device) => {
                 let notif = if trusted {
-                    NotificationResponse {
-                        title: "DEVICE_TRUSTED".to_string(),
+                    WebSocketMessage {
+                        t: Some("DEVICE_TRUSTED".to_string()),
                         op: 2,
-                        data: json!(device),
+                        d: Some(json!(device)),
                     }
                 } else {
-                    NotificationResponse {
-                        title: "DEVICE_UNTRUSTED".to_string(),
+                    WebSocketMessage {
+                        t: Some("DEVICE_UNTRUSTED".to_string()),
                         op: 2,
-                        data: json!(device),
+                        d: Some(json!(device)),
                     }
                 };
 
@@ -211,17 +211,17 @@ pub fn send_bluetooth_device_trusted_event(tx: &Sender<NotificationResponse>, ms
     });
 }
 
-pub fn send_new_bluetooth_device_event(tx: &Sender<NotificationResponse>, msg: &Message, conn_clone: &Arc<SyncConnection>) {
+pub fn send_new_bluetooth_device_event(tx: &Sender<WebSocketMessage>, msg: &Message, conn_clone: &Arc<SyncConnection>) {
     let device_path = msg.path().unwrap().to_string();
     let conn_clone = conn_clone.clone();
     let tx = tx.clone();
     task::spawn(async move {
         match get_bluetooth_device_properties(&conn_clone, &device_path).await {
             Ok(device) => {
-                let notif = NotificationResponse {
-                    title: "DEVICE_FOUND".to_string(),
+                let notif = WebSocketMessage {
+                    t: Some("DEVICE_FOUND".to_string()),
                     op: 2,
-                    data: json!(device),
+                    d: Some(json!(device)),
                 };
 
                 tx.send(notif).unwrap();
@@ -231,7 +231,7 @@ pub fn send_new_bluetooth_device_event(tx: &Sender<NotificationResponse>, msg: &
     });
 }
 
-pub fn send_bluetooth_device_connected_event(tx: &Sender<NotificationResponse>, msg: &Message, conn_clone: &Arc<SyncConnection>, variant: &Variant<Box<dyn RefArg>>) {
+pub fn send_bluetooth_device_connected_event(tx: &Sender<WebSocketMessage>, msg: &Message, conn_clone: &Arc<SyncConnection>, variant: &Variant<Box<dyn RefArg>>) {
     let device_path = msg.path().unwrap().to_string();
     let conn_clone = conn_clone.clone();
     let tx = tx.clone();
@@ -241,16 +241,16 @@ pub fn send_bluetooth_device_connected_event(tx: &Sender<NotificationResponse>, 
         match get_bluetooth_device_properties(&conn_clone, &device_path).await {
             Ok(device) => {
                 let notif = if connected {
-                    NotificationResponse {
-                        title: "DEVICE_CONNECTED".to_string(),
+                    WebSocketMessage {
+                        t: Some("DEVICE_CONNECTED".to_string()),
                         op: 2,
-                        data: json!(device),
+                        d: Some(json!(device)),
                     }
                 } else {
-                    NotificationResponse {
-                        title: "DEVICE_DISCONNECTED".to_string(),
+                    WebSocketMessage {
+                        t: Some("DEVICE_DISCONNECTED".to_string()),
                         op: 2,
-                        data: json!(device),
+                        d: Some(json!(device)),
                     }
                 };
 

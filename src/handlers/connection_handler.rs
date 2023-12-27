@@ -14,8 +14,7 @@ use tokio_tungstenite::{
 use crate::enums::system_command::SystemCommand;
 use crate::enums::led_type::LEDType;
 use crate::hardware::led;
-use crate::models::notification_response::NotificationResponse;
-use crate::models::websocket_message::WebSocketMessage;
+use crate::models::websocket::WebSocketMessage;
 
 #[derive(Serialize, Deserialize)]
 struct LEDControlData {
@@ -33,7 +32,7 @@ struct BluetoothDeviceData {
     address: String,
 }
 
-pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::sync::broadcast::Sender<NotificationResponse>, mut rx: Receiver<NotificationResponse>, tx_dbus: Sender<SystemCommand>) -> Result<()> {
+pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::sync::broadcast::Sender<WebSocketMessage>, mut rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>) -> Result<()> {
     let ws_stream = accept_async(stream).await.expect("Failed to accept");
     info!("New WebSocket connection: {}", peer);
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
@@ -46,12 +45,7 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::s
         tokio::select! {
             message = rx.recv() => {
                 if let Ok(received_notification) = message {
-                    let ws_message = WebSocketMessage {
-                        op: received_notification.op,
-                        t: Some(received_notification.title),
-                        d: Some(received_notification.data),
-                    };
-                    if let Ok(json_msg) = serde_json::to_string(&ws_message) {
+                    if let Ok(json_msg) = serde_json::to_string(&received_notification) {
                         ws_sender.send(Message::Text(json_msg)).await?;
                     }
                 }

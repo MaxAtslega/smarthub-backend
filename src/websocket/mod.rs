@@ -9,9 +9,9 @@ use tokio_tungstenite::tungstenite::{Error, Result};
 use crate::config::WebSocketConf;
 use crate::enums::system_command::SystemCommand;
 use crate::handlers::connection_handler::handle_connection;
-use crate::models::notification_response::NotificationResponse;
+use crate::models::websocket::WebSocketMessage;
 
-pub async fn init(web_socket_conf: &WebSocketConf, mut tx: tokio::sync::broadcast::Sender<NotificationResponse>, rx: Receiver<NotificationResponse>, tx_dbus: Sender<SystemCommand>) -> Result<(), Error> {
+pub async fn init(web_socket_conf: &WebSocketConf, mut tx: tokio::sync::broadcast::Sender<WebSocketMessage>, rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>) -> Result<(), Error> {
     let address = format!("{}:{}", web_socket_conf.address, web_socket_conf.port);
     let try_socket = TcpListener::bind(&address).await;
 
@@ -32,7 +32,7 @@ pub async fn init(web_socket_conf: &WebSocketConf, mut tx: tokio::sync::broadcas
     Ok(())
 }
 
-async fn accept_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::sync::broadcast::Sender<NotificationResponse>, rx: Receiver<NotificationResponse>, tx_dbus: Sender<SystemCommand>) {
+async fn accept_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::sync::broadcast::Sender<WebSocketMessage>, rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>) {
     if let Err(e) = handle_connection(peer, stream, tx, rx, tx_dbus).await {
         match e {
             Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),

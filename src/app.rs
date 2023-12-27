@@ -7,7 +7,7 @@ use crate::common::db;
 use crate::enums::system_command::SystemCommand;
 use crate::handlers::system_handler;
 use crate::hardware::rfid;
-use crate::models::notification_response::NotificationResponse;
+use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
 pub async fn launch(conf: &Config) {
@@ -16,7 +16,7 @@ pub async fn launch(conf: &Config) {
 
     let db_connection = db::establish_connection(&conf.database.connection_string).unwrap();
 
-    let (tx, rx1) = broadcast::channel::<NotificationResponse>(10);
+    let (tx, rx1) = broadcast::channel::<WebSocketMessage>(10);
     let (tx_dbus, rx_dbus): (Sender<SystemCommand>, Receiver<SystemCommand>) = channel::<SystemCommand>(32);
 
     let tx2 = tx.clone();
