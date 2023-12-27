@@ -16,6 +16,7 @@ mod common;
 mod enums;
 mod handlers;
 mod network;
+mod schema;
 
 fn main() {
     let conf = Config::from_any().unwrap();

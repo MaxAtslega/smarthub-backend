@@ -3,6 +3,7 @@ use tokio::sync::{broadcast, oneshot};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{Config, websocket};
+use crate::common::db;
 use crate::enums::system_command::SystemCommand;
 use crate::handlers::system_handler;
 use crate::hardware::rfid;
@@ -12,6 +13,8 @@ use crate::models::notification_response::NotificationResponse;
 pub async fn launch(conf: &Config) {
     // Print welcome message
     info!("Starting App in {}", conf.app.environment);
+
+    let db_connection = db::establish_connection(&conf.database.connection_string).unwrap();
 
     let (tx, rx1) = broadcast::channel::<NotificationResponse>(10);
     let (tx_dbus, rx_dbus): (Sender<SystemCommand>, Receiver<SystemCommand>) = channel::<SystemCommand>(32);

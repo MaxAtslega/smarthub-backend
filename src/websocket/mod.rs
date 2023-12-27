@@ -32,7 +32,6 @@ pub async fn init(web_socket_conf: &WebSocketConf, mut tx: tokio::sync::broadcas
     Ok(())
 }
 
-
 async fn accept_connection(peer: SocketAddr, stream: TcpStream, tx: tokio::sync::broadcast::Sender<NotificationResponse>, rx: Receiver<NotificationResponse>, tx_dbus: Sender<SystemCommand>) {
     if let Err(e) = handle_connection(peer, stream, tx, rx, tx_dbus).await {
         match e {

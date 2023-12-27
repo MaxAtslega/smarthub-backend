@@ -9,6 +9,7 @@ use thiserror::Error;
 pub struct Config {
     pub app: AppConf,
     pub websocket: WebSocketConf,
+    pub database: DatabaseConfig,
     pub log: LogConf,
 }
 
@@ -26,6 +27,11 @@ pub struct AppConf {
 pub struct WebSocketConf {
     pub address: IpAddr,
     pub port: u16,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DatabaseConfig {
+    pub connection_string: String,
 }
 
 #[derive(Error, Debug)]

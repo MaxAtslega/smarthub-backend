@@ -7,3 +7,6 @@ file = "latest.api.log"
 [websocket]
 address = "0.0.0.0"
 port = 6814
+
+[database]
+connection_string = "Database.db"
