@@ -1,6 +1,14 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    constants (id) {
+        id -> Integer,
+        name -> Text,
+        value -> Text,
+    }
+}
+
+diesel::table! {
     user_actions (id) {
         id -> Integer,
         user_id -> Integer,
@@ -45,6 +53,7 @@ diesel::joinable!(user_requests -> user_actions (action_id));
 diesel::joinable!(user_rfid -> user_actions (action_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    constants,
     user_actions,
     user_requests,
     user_rfid,

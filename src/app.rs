@@ -14,7 +14,7 @@ pub async fn launch(conf: &Config) {
     // Print welcome message
     info!("Starting App in {}", conf.app.environment);
 
-    let db_connection = db::establish_connection(&conf.database.connection_string).unwrap();
+    let db_connection = db::establish_connection_pool(&conf.database.connection_string);
 
     let (tx, rx1) = broadcast::channel::<WebSocketMessage>(10);
     let (tx_dbus, rx_dbus): (Sender<SystemCommand>, Receiver<SystemCommand>) = channel::<SystemCommand>(32);
@@ -36,7 +36,7 @@ pub async fn launch(conf: &Config) {
         }
     });
 
-    websocket::init(&conf.websocket, tx3, rx1, tx_dbus).await.expect("Failed to start websocket server");
+    websocket::init(&conf.websocket, tx3, rx1, tx_dbus, db_connection).await.expect("Failed to start websocket server");
 
     // Send shutdown signal
     let _ = shutdown_tx.send(());

@@ -2,18 +2,20 @@ use std::{io, net::SocketAddr};
 use std::process::Command;
 
 use futures_util::{SinkExt, StreamExt};
+use futures_util::stream::{SplitSink, SplitStream};
 use log::{debug, error, info};
 use serde_derive::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
-use tokio_tungstenite::{
-    accept_async,
-    tungstenite::{Message, Result}};
+use tokio_tungstenite::{accept_async, tungstenite::{Message, Result}, WebSocketStream};
+use crate::common::db::DatabasePool;
 
 use crate::enums::system_command::SystemCommand;
 use crate::enums::led_type::LEDType;
+use crate::handlers::database_handler;
 use crate::hardware::led;
+use crate::models::constants::Constant;
 use crate::models::websocket::WebSocketMessage;
 
 #[derive(Serialize, Deserialize)]
@@ -28,18 +30,40 @@ struct WlanData {
 }
 
 #[derive(Serialize, Deserialize)]
+struct UserDeleteData {
+    id: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ConstantData {
+    name: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct UserChangeData {
+    pub id: i32,
+    pub username: Option<String>,
+    pub birthday: Option<Option<chrono::NaiveDate>>, // Nested Option to allow clearing the date
+    pub theme: Option<i32>,
+    pub language: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
 struct BluetoothDeviceData {
     address: String,
 }
 
-pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::sync::broadcast::Sender<WebSocketMessage>, mut rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>) -> Result<()> {
+pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::sync::broadcast::Sender<WebSocketMessage>, mut rx: Receiver<WebSocketMessage>, tx_dbus: Sender<SystemCommand>, database_pool: DatabasePool) -> Result<()> {
     let ws_stream = accept_async(stream).await.expect("Failed to accept");
     info!("New WebSocket connection: {}", peer);
-    let (mut ws_sender, mut ws_receiver) = ws_stream.split();
+    let (mut ws_sender, mut ws_receiver): (SplitSink<WebSocketStream<TcpStream>, Message>, SplitStream<WebSocketStream<TcpStream>>) = ws_stream.split();
 
     let tx_dbus2 = tx_dbus.clone();
     tx_dbus2.send(SystemCommand::GetAllBluetoothDevices).await.expect("Failed to send dbus command");
     tx_dbus2.send(SystemCommand::GetNetworkInterfaces).await.expect("Failed to send dbus command");
+
+    database_handler::get_users(&database_pool, &mut ws_sender).await;
+    database_handler::get_contants(&database_pool, &mut ws_sender).await;
 
     loop {
         tokio::select! {
@@ -90,6 +114,59 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
                                                         if let Some(message) = parsed_message.d {
                                                             if let Ok(wifi_data) = serde_json::from_value::<WlanData>(message) {
                                                                 tx_dbus.send(SystemCommand::ConnectWifi(wifi_data.ssid, wifi_data.password )).await.expect("Failed to send dbus command");
+                                                            }
+                                                        }
+                                                    },
+                                                    "CONSTANTS" => {
+                                                        database_handler::get_contants(&database_pool, &mut ws_sender).await;
+                                                    },
+                                                    "USERS" => {
+                                                        database_handler::get_users(&database_pool, &mut ws_sender).await;
+                                                    },
+                                                    "CREATE_USER" => {
+                                                        if let Some(message) = parsed_message.d {
+                                                            if let Ok(user_data) = serde_json::from_value::<crate::models::user::NewUser>(message) {
+                                                                database_handler::create_user(&database_pool, user_data, &mut ws_sender).await;
+                                                            }
+                                                        }
+                                                    },
+                                                    "DELETE_USER" => {
+                                                        if let Some(message) = parsed_message.d {
+                                                            if let Ok(user_data) = serde_json::from_value::<UserDeleteData>(message) {
+                                                                database_handler::delete_user(&database_pool, user_data.id, &mut ws_sender).await;
+                                                            }
+                                                        }
+                                                    },
+                                                    "UPDATE_USER" => {
+                                                        if let Some(message) = parsed_message.d {
+                                                            if let Ok(user_data) = serde_json::from_value::<UserChangeData>(message) {
+                                                                database_handler::update_user(&database_pool,
+                                                                    user_data.id,
+                                                                    user_data.username,
+                                                                    user_data.birthday,
+                                                                    user_data.theme,
+                                                                    user_data.language, &mut ws_sender).await;
+                                                            }
+                                                        }
+                                                    },
+                                                    "SET_CONSTANT" => {
+                                                        if let Some(message) = parsed_message.d {
+                                                            if let Ok(constant_data) = serde_json::from_value::<crate::models::constants::NewConstant>(message) {
+                                                                database_handler::set_constant(&database_pool, constant_data.name, constant_data.value, &mut ws_sender).await;
+                                                            }
+                                                        }
+                                                    },
+                                                    "DELETE_CONSTANT" => {
+                                                        if let Some(message) = parsed_message.d {
+                                                            if let Ok(constant_data) = serde_json::from_value::<ConstantData>(message) {
+                                                                database_handler::delete_constant(&database_pool, constant_data.name, &mut ws_sender).await;
+                                                            }
+                                                        }
+                                                    },
+                                                    "CREATE_CONSTANT" => {
+                                                        if let Some(message) = parsed_message.d {
+                                                            if let Ok(constant_data) = serde_json::from_value::<crate::models::constants::NewConstant>(message) {
+                                                                database_handler::create_constant(&database_pool, constant_data.name, constant_data.value, &mut ws_sender).await;
                                                             }
                                                         }
                                                     },

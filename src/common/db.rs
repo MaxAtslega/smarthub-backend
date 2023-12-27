@@ -1,15 +1,10 @@
 use diesel::prelude::*;
-use log::{error, debug};
+use diesel::r2d2::{ConnectionManager, Pool};
 
-pub fn establish_connection(database_url: &str) -> Result<SqliteConnection, ConnectionError> {
-    match SqliteConnection::establish(database_url) {
-        Ok(connection) => {
-            debug!("Connected to database");
-            Ok(connection)
-        },
-        Err(error) => {
-            error!("Could not connect to database");
-            Err(error)
-        }
-    }
+pub type DatabasePool = Pool<ConnectionManager<SqliteConnection>>;
+
+pub fn establish_connection_pool(database_url: &str) -> DatabasePool {
+    let manager = ConnectionManager::<SqliteConnection>::new(database_url);
+
+    Pool::builder().build(manager).expect("Failed to create pool.")
 }
