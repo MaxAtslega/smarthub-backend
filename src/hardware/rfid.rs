@@ -66,7 +66,7 @@ pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot
                         set_display_power(&mut bl_power_file, true);
 
                         let notification = WebSocketMessage {
-                            t: Some("DISPLAY".to_string()),
+                            t: Some("DISPLAY_STATUS".to_string()),
                             op: 0,
                             d: Some(json!({"status": "on"})),
                         };

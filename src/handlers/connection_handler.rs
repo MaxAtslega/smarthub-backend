@@ -102,7 +102,7 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
                                                         hardware::display::set_display_power(&mut bl_power_file, false);
 
                                                         let notification = WebSocketMessage {
-                                                            t: Some("DISPLAY".to_string()),
+                                                            t: Some("DISPLAY_STATUS".to_string()),
                                                             op: 0,
                                                             d: Some(json!({"status": "off"})),
                                                         };
