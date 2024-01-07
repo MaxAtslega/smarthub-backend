@@ -2,7 +2,7 @@ use log::{error, info};
 use tokio::sync::{broadcast, oneshot};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
-use crate::{Config, websocket};
+use crate::{Config, hardware, websocket};
 use crate::common::db;
 use crate::enums::system_command::SystemCommand;
 use crate::handlers::system_handler;
@@ -19,14 +19,21 @@ pub async fn launch(conf: &Config) {
     let (tx, rx1) = broadcast::channel::<WebSocketMessage>(10);
     let (tx_dbus, rx_dbus): (Sender<SystemCommand>, Receiver<SystemCommand>) = channel::<SystemCommand>(32);
 
+    let tx1 = tx.clone();
     let tx2 = tx.clone();
     let tx3 = tx.clone();
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
-    let control_rfid_handle = tokio::task::spawn_blocking(|| {
+    std::thread::spawn(|| {
         if let Err(e) = rfid::control_rfid(tx, shutdown_rx) {
             error!("Failed in control_rfid: {}", e);
+        }
+    });
+
+    std::thread::spawn(|| {
+        if let Err(e) = hardware::display::display_handler_sleep(tx1) {
+            error!("Failed in systemd handler sleep: {}", e);
         }
     });
 
@@ -41,7 +48,6 @@ pub async fn launch(conf: &Config) {
     // Send shutdown signal
     let _ = shutdown_tx.send(());
 
-    let _ = control_rfid_handle.await;
     let _ = control_bluetooth_handle.await;
 }
 

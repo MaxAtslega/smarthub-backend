@@ -1,3 +1,4 @@
+use std::fs::File;
 use std::time::{Duration, Instant};
 
 use linux_embedded_hal::{Pin, Spidev};
@@ -10,6 +11,8 @@ use tokio::sync::broadcast::Sender;
 use tokio::sync::oneshot;
 
 use crate::common::utils;
+use crate::hardware;
+use crate::hardware::display::{get_display_power, set_display_power};
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
@@ -17,6 +20,7 @@ pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot
     if !utils::is_raspberry_pi_4b() {
         return Err("This app is only compatible with Raspberry Pi 4 Model B".to_string());
     }
+    let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power").unwrap();
 
     let mut spi = Spidev::open("/dev/spidev0.0").unwrap();
     let options = SpidevOptions::new()
@@ -57,6 +61,19 @@ pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot
                     };
 
                     tx.send(notif).unwrap();
+
+                    if get_display_power().contains("1") {
+                        set_display_power(&mut bl_power_file, true);
+
+                        let notification = WebSocketMessage {
+                            t: Some("DISPLAY".to_string()),
+                            op: 0,
+                            d: Some(json!({"status": "on"})),
+                        };
+
+                        tx.send(notification).unwrap();
+                    }
+
                     last_uid = Some(uid_str);
                     last_sent = Instant::now();
                 }

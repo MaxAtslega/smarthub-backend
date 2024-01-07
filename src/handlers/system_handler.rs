@@ -1,15 +1,22 @@
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
+use std::process::Command;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use dbus::arg::{RefArg, Variant};
 use dbus::Message;
 use dbus::message::MatchRule;
 use dbus::nonblock::SyncConnection;
 use dbus_tokio::connection;
+use evdev::{Device, EventType};
 use futures::channel::mpsc::UnboundedReceiver;
-use log::{error, info};
+
+use log::{debug, error, info};
 use tokio::sync::broadcast::Sender;
 use tokio::sync::mpsc::Receiver;
+use tokio::time::{interval, timeout};
 
 use crate::enums::system_command::SystemCommand;
 use crate::handlers::bluetooth_handler::{handle_bluetooth_device_command, handle_bluetooth_discovery_command, handle_get_all_bluetooth_devices_command, send_bluetooth_device_boned_event, send_bluetooth_device_connected_event, send_bluetooth_device_paired_event, send_bluetooth_device_trusted_event, send_bluetooth_discover_event, send_new_bluetooth_device_event};
@@ -96,7 +103,6 @@ async fn handle_dbus_commands(mut rx: Receiver<SystemCommand>, conn: Arc<SyncCon
         }
     }
 }
-
 
 
 async fn handle_dbus_events(tx: &Sender<WebSocketMessage>, conn: &Arc<SyncConnection>, stream: UnboundedReceiver<(Message, (String, ))>) {

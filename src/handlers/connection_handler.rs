@@ -1,10 +1,12 @@
 use std::{io, net::SocketAddr};
+use std::fs::File;
 use std::process::Command;
 
 use futures_util::{SinkExt, StreamExt};
 use futures_util::stream::{SplitSink, SplitStream};
 use log::{debug, error, info};
 use serde_derive::{Deserialize, Serialize};
+use serde_json::json;
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
@@ -13,7 +15,9 @@ use crate::common::db::DatabasePool;
 
 use crate::enums::system_command::SystemCommand;
 use crate::enums::led_type::LEDType;
-use crate::handlers::database_handler;
+use crate::handlers::{database_handler, system_handler};
+use crate::handlers::system_handler::system_handler;
+use crate::hardware;
 use crate::hardware::led;
 use crate::models::constants::Constant;
 use crate::models::websocket::WebSocketMessage;
@@ -57,6 +61,7 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
     let ws_stream = accept_async(stream).await.expect("Failed to accept");
     info!("New WebSocket connection: {}", peer);
     let (mut ws_sender, mut ws_receiver): (SplitSink<WebSocketStream<TcpStream>, Message>, SplitStream<WebSocketStream<TcpStream>>) = ws_stream.split();
+    let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power")?;
 
     let tx_dbus2 = tx_dbus.clone();
     tx_dbus2.send(SystemCommand::GetAllBluetoothDevices).await.expect("Failed to send dbus command");
@@ -91,6 +96,18 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
                                                             if let Ok(led_data) = serde_json::from_value::<LEDControlData>(message) {
                                                                 led::flash_led(led_data.color).await.expect("Failed to flash LED");
                                                             }
+                                                        }
+                                                    },
+                                                    "DISPLAY" => {
+                                                        hardware::display::set_display_power(&mut bl_power_file, false);
+
+                                                        let notification = WebSocketMessage {
+                                                            t: Some("DISPLAY".to_string()),
+                                                            op: 0,
+                                                            d: Some(json!({"status": "off"})),
+                                                        };
+                                                        if let Ok(json_msg) = serde_json::to_string(&notification) {
+                                                            ws_sender.send(Message::Text(json_msg)).await?;
                                                         }
                                                     },
                                                     "REBOOT" => {
