@@ -4,13 +4,14 @@ use std::io::{Read, Seek, Write};
 use std::time::{Duration, Instant};
 use diesel::serialize::ToSql;
 use evdev::{Device, EventType};
+use futures_util::StreamExt;
 use log::{debug, error};
 use serde_json::json;
 use tokio::time::{interval, timeout};
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
-pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketMessage>) -> Result<(), Box<dyn std::error::Error>>{
+pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketMessage>) -> Result<(), Box<dyn std::error::Error>> {
     // Open the touchscreen device file
     let device_path = "/dev/input/event2";
     // Open the bl_power file for controlling the display power
@@ -22,62 +23,57 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
     // Print device information
     debug!("Device: {}", device.name().unwrap_or("Unknown device"));
 
-
     // Track the last time an event occurred
     let mut last_event_time = Instant::now();
 
     let mut events = device.into_event_stream()?;
-
-    let mut timer = interval(Duration::from_secs(1));
+    let mut timer = interval(Duration::from_secs(10));
 
     loop {
-        // Check for touch events or wait for the timer
-        let result = timeout(Duration::from_secs(1), events.next_event()).await;
+        tokio::select! {
+            Some(msg) = events.next() => {
+                if let Ok(event) = msg {
+                    match event.event_type() {
+                        EventType::ABSOLUTE => {
+                            if get_display_power().contains("1") {
+                                set_display_power(&mut bl_power_file, true);
 
-        match result {
-            Ok(Ok(event)) => {
-                match event.event_type() {
-                    EventType::ABSOLUTE => {
-                        if get_display_power().contains("1") {
-                            set_display_power(&mut bl_power_file, true);
+                                let notification = WebSocketMessage {
+                                    t: Some("DISPLAY_STATUS".to_string()),
+                                    op: 0,
+                                    d: Some(json!({"status": "on"})),
+                                };
 
-                            let notification = WebSocketMessage {
-                                t: Some("DISPLAY_STATUS".to_string()),
-                                op: 0,
-                                d: Some(json!({"status": "on"})),
-                            };
+                                tx.send(notification).unwrap();
+                            }
 
-                            tx.send(notification).unwrap();
+                            last_event_time = Instant::now();
                         }
-
-                        last_event_time = Instant::now();
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
-            _ => {} // Timeout or error, continue with the loop
-        }
 
-        // Check for inactivity and turn off the display after 5 minutes
-        let elapsed_time = Instant::now() - last_event_time;
-        if elapsed_time >= Duration::from_secs(300) {
-            if get_display_power().contains("0") {
-                let notification = WebSocketMessage {
-                    t: Some("DISPLAY_STATUS".to_string()),
-                    op: 0,
-                    d: Some(json!({"status": "off"})),
-                };
+            // Every second
+            _ = timer.tick() => {
+                let elapsed_time = Instant::now() - last_event_time;
+                if elapsed_time >= Duration::from_secs(300) {
+                    if get_display_power().contains("0") {
+                        let notification = WebSocketMessage {
+                            t: Some("DISPLAY_STATUS".to_string()),
+                            op: 0,
+                            d: Some(json!({"status": "off"})),
+                        };
 
-                tx.send(notification).unwrap();
-
-                set_display_power(&mut bl_power_file, false);
+                        tx.send(notification).unwrap();
+                        set_display_power(&mut bl_power_file, false);
+                    }
+                }
             }
         }
-
-        // Wait for the next timer tick
-        timer.tick().await;
     }
 }
+
 
 pub fn set_display_power(bl_power_file: &mut File, activate: bool) {
     let power_value = if activate { "0" } else { "1" };
