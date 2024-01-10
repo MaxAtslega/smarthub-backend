@@ -42,7 +42,7 @@ diesel::table! {
         id -> Integer,
         username -> Text,
         theme -> Integer,
-        birthday -> Nullable<Date>,
+        birthday -> Date,
         language -> Text,
         created_on -> Timestamp,
     }

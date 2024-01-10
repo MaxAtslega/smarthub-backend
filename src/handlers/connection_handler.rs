@@ -47,7 +47,7 @@ struct ConstantData {
 pub struct UserChangeData {
     pub id: i32,
     pub username: Option<String>,
-    pub birthday: Option<Option<chrono::NaiveDate>>, // Nested Option to allow clearing the date
+    pub birthday: Option<chrono::NaiveDate>, // Nested Option to allow clearing the date
     pub theme: Option<i32>,
     pub language: Option<String>,
 }
@@ -61,7 +61,6 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
     let ws_stream = accept_async(stream).await.expect("Failed to accept");
     info!("New WebSocket connection: {}", peer);
     let (mut ws_sender, mut ws_receiver): (SplitSink<WebSocketStream<TcpStream>, Message>, SplitStream<WebSocketStream<TcpStream>>) = ws_stream.split();
-    let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power")?;
 
     let tx_dbus2 = tx_dbus.clone();
     tx_dbus2.send(SystemCommand::GetAllBluetoothDevices).await.expect("Failed to send dbus command");
@@ -99,6 +98,7 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
                                                         }
                                                     },
                                                     "DISPLAY" => {
+                                                        let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power").unwrap();
                                                         hardware::display::set_display_power(&mut bl_power_file, false);
 
                                                         let notification = WebSocketMessage {
@@ -142,8 +142,11 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
                                                     },
                                                     "CREATE_USER" => {
                                                         if let Some(message) = parsed_message.d {
-                                                            if let Ok(user_data) = serde_json::from_value::<crate::models::user::NewUser>(message) {
+                                                            let user = serde_json::from_value::<crate::models::user::NewUser>(message);
+                                                            if let Ok(user_data) = user {
                                                                 database_handler::create_user(&database_pool, user_data, &mut ws_sender).await;
+                                                            } else {
+                                                                error!("Error: {:?}", user.unwrap_err())
                                                             }
                                                         }
                                                     },

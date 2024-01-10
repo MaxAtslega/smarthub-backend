@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use diesel::{RunQueryDsl, SqliteConnection};
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use serde_derive::{Deserialize, Serialize};
@@ -11,16 +11,16 @@ pub struct User {
     pub id: i32,
     pub username: String,
     pub theme: i32,
-    pub birthday: Option<chrono::NaiveDate>,
+    pub birthday: NaiveDate,
     pub language: String,
     pub created_on: NaiveDateTime,
 }
 
-#[derive(Insertable, AsChangeset, Deserialize, Serialize)]
+#[derive(Insertable, AsChangeset, Deserialize, Serialize, Debug)]
 #[table_name = "user_users"]
 pub struct NewUser {
     pub username: String,
-    pub birthday: Option<chrono::NaiveDate>,
+    pub birthday: chrono::NaiveDate,
     pub theme: i32,
     pub language: String,
 }
@@ -29,7 +29,7 @@ pub struct NewUser {
 #[table_name = "user_users"]
 pub struct UserChangeset {
     pub username: Option<String>,
-    pub birthday: Option<Option<chrono::NaiveDate>>, // Nested Option to allow clearing the date
+    pub birthday: Option<chrono::NaiveDate>,
     pub theme: Option<i32>,
     pub language: Option<String>,
 }

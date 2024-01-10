@@ -1,5 +1,7 @@
 use futures_util::SinkExt;
 use futures_util::stream::SplitSink;
+use libc::user;
+use log::error;
 use serde_json::json;
 use tokio::net::TcpStream;
 use tokio_tungstenite::WebSocketStream;
@@ -14,6 +16,7 @@ pub async fn get_users(pool: &DatabasePool, sender: &mut SplitSink<WebSocketStre
     let users = User::all(&mut conn);
 
     if users.is_err() {
+        error!("Error while fetching user data: {:?}", users.unwrap_err());
         return;
     }
 
@@ -81,7 +84,7 @@ pub async fn update_user(
     pool: &DatabasePool,
     user_id: i32,
     user_username: Option<String>,
-    user_birthday: Option<Option<chrono::NaiveDate>>,
+    user_birthday: Option<chrono::NaiveDate>,
     user_theme: Option<i32>,
     user_language: Option<String>,
     sender: &mut SplitSink<WebSocketStream<TcpStream>, Message>
