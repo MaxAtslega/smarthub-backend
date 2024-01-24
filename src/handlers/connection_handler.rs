@@ -15,11 +15,9 @@ use crate::common::db::DatabasePool;
 
 use crate::enums::system_command::SystemCommand;
 use crate::enums::led_type::LEDType;
-use crate::handlers::{database_handler, system_handler};
-use crate::handlers::system_handler::system_handler;
+use crate::handlers::{database_handler};
 use crate::hardware;
 use crate::hardware::led;
-use crate::models::constants::Constant;
 use crate::models::websocket::WebSocketMessage;
 
 #[derive(Serialize, Deserialize)]

@@ -1,14 +1,13 @@
 use std::fs;
 use std::fs::File;
-use std::io::{Read, Seek, Write};
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use diesel::serialize::ToSql;
 use evdev::{Device, EventType};
 use futures_util::StreamExt;
 use log::{debug, error};
 use serde_json::json;
-use tokio::time::{interval, timeout};
+use tokio::time::{interval};
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]

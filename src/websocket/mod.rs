@@ -1,7 +1,4 @@
 use std::net::SocketAddr;
-use diesel::r2d2::{ConnectionManager, PooledConnection};
-use diesel::SqliteConnection;
-
 use log::{error, info};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::broadcast::Receiver;

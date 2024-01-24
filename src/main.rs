@@ -1,7 +1,5 @@
 #![feature(ptr_metadata)]
 extern crate dbus;
-
-#[macro_use]
 extern crate diesel;
 
 use config::Config;

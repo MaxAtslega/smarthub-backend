@@ -12,7 +12,6 @@ use tokio::sync::broadcast::Sender;
 use tokio::sync::oneshot;
 
 use crate::common::utils;
-use crate::hardware;
 use crate::hardware::display::{get_display_power, set_display_power};
 use crate::models::websocket::WebSocketMessage;
 

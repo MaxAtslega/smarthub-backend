@@ -1,10 +1,11 @@
-use serde_derive::{Deserialize, Serialize};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
-use crate::{schema::constants::{self, dsl::*}};
+use serde_derive::{Deserialize, Serialize};
+
+use crate::schema::constants::dsl::*;
 
 #[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
-#[table_name = "constants"]
+#[diesel(table_name = crate::schema::constants)]
 pub struct Constant {
     pub id: i32,
     pub name: String,
@@ -12,7 +13,7 @@ pub struct Constant {
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
-#[table_name = "constants"]
+#[diesel(table_name = crate::schema::constants)]
 pub struct NewConstant {
     pub name: String,
     pub value: String,

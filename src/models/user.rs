@@ -1,12 +1,13 @@
 use chrono::{NaiveDate, NaiveDateTime};
 use diesel::{RunQueryDsl, SqliteConnection};
+use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use serde_derive::{Deserialize, Serialize};
-use crate::{schema::user_users::{self, dsl::*}};
-use diesel::prelude::*;
+
+use crate::schema::user_users::dsl::*;
 
 #[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
-#[table_name = "user_users"]
+#[diesel(table_name = crate::schema::user_users)]
 pub struct User {
     pub id: i32,
     pub username: String,
@@ -17,7 +18,7 @@ pub struct User {
 }
 
 #[derive(Insertable, AsChangeset, Deserialize, Serialize, Debug)]
-#[table_name = "user_users"]
+#[diesel(table_name = crate::schema::user_users)]
 pub struct NewUser {
     pub username: String,
     pub birthday: chrono::NaiveDate,
@@ -26,7 +27,7 @@ pub struct NewUser {
 }
 
 #[derive(AsChangeset, Deserialize, Serialize)]
-#[table_name = "user_users"]
+#[diesel(table_name = crate::schema::user_users)]
 pub struct UserChangeset {
     pub username: Option<String>,
     pub birthday: Option<chrono::NaiveDate>,

@@ -1,9 +1,8 @@
 use diesel::prelude::*;
 use serde_derive::{Deserialize, Serialize};
-use crate::schema::user_rfid;
 
 #[derive(Queryable, Insertable, AsChangeset, Identifiable, Deserialize, Serialize)]
-#[table_name = "user_rfid"]
+#[diesel(table_name = crate::schema::user_rfid)]
 pub struct UserRfid {
     pub id: i32,
     pub rfid_uid: String,
