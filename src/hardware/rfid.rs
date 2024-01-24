@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use linux_embedded_hal::{Pin, Spidev};
@@ -16,7 +17,7 @@ use crate::hardware::display::{get_display_power, set_display_power};
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
-pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot::Receiver<()>) -> Result<(), String> {
+pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot::Receiver<()>, last_event_time: Arc<Mutex<Instant>>) -> Result<(), String> {
     if !utils::is_raspberry_pi_4b() {
         return Err("This app is only compatible with Raspberry Pi 4 Model B".to_string());
     }
@@ -72,6 +73,9 @@ pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot
                         };
 
                         tx.send(notification).unwrap();
+
+                        let mut guard = last_event_time.lock().unwrap();
+                        *guard = Instant::now();
                     }
 
                     last_uid = Some(uid_str);

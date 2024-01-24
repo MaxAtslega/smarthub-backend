@@ -1,6 +1,7 @@
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Seek, Write};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use diesel::serialize::ToSql;
 use evdev::{Device, EventType};
@@ -11,7 +12,7 @@ use tokio::time::{interval, timeout};
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
-pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketMessage>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketMessage>, last_event_time: Arc<Mutex<Instant>>) -> Result<(), Box<dyn std::error::Error>> {
     // Open the touchscreen device file
     let device_path = "/dev/input/event2";
     // Open the bl_power file for controlling the display power
@@ -24,7 +25,7 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
     debug!("Device: {}", device.name().unwrap_or("Unknown device"));
 
     // Track the last time an event occurred
-    let mut last_event_time = Instant::now();
+    let mut last_event_time2 = last_event_time.lock().unwrap();
 
     let mut events = device.into_event_stream()?;
     let mut timer = interval(Duration::from_secs(10));
@@ -47,7 +48,7 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
                                 tx.send(notification).unwrap();
                             }
 
-                            last_event_time = Instant::now();
+                            *last_event_time2 = Instant::now();
                         }
                         _ => {}
                     }
@@ -56,7 +57,7 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
 
             // Every second
             _ = timer.tick() => {
-                let elapsed_time = Instant::now() - last_event_time;
+                let elapsed_time = Instant::now() - *last_event_time2;
                 if elapsed_time >= Duration::from_secs(300) {
                     if get_display_power().contains("0") {
                         let notification = WebSocketMessage {

@@ -1,6 +1,5 @@
 use futures_util::SinkExt;
 use futures_util::stream::SplitSink;
-use libc::user;
 use log::error;
 use serde_json::json;
 use tokio::net::TcpStream;

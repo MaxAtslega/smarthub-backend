@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use log::{error, info};
 use tokio::sync::{broadcast, oneshot};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
@@ -23,16 +25,20 @@ pub async fn launch(conf: &Config) {
     let tx2 = tx.clone();
     let tx3 = tx.clone();
 
+    let last_event_time = Arc::new(Mutex::new(Instant::now()));
+
+    let last_event_time_clone = Arc::clone(&last_event_time);
+
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
-    std::thread::spawn(|| {
-        if let Err(e) = rfid::control_rfid(tx, shutdown_rx) {
+    tokio::task::spawn_blocking(|| {
+        if let Err(e) = rfid::control_rfid(tx, shutdown_rx, last_event_time) {
             error!("Failed in control_rfid: {}", e);
         }
     });
 
     std::thread::spawn(|| {
-        if let Err(e) = hardware::display::display_handler_sleep(tx1) {
+        if let Err(e) = hardware::display::display_handler_sleep(tx1, last_event_time_clone) {
             error!("Failed in systemd handler sleep: {}", e);
         }
     });
