@@ -2,6 +2,7 @@ use rppal::gpio::{Error as GpioError, Gpio};
 
 use crate::enums::led_type::LEDType;
 
+#[tokio::main]
 pub async fn flash_led(led_type: LEDType) -> Result<(), GpioError> {
     let gpio = Gpio::new()?;
     let mut led = gpio.get(led_type as u8)?.into_output();

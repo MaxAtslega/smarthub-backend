@@ -1,6 +1,7 @@
 use std::{io, net::SocketAddr};
 use std::fs::File;
 use std::process::Command;
+use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
 use futures_util::stream::{SplitSink, SplitStream};
@@ -10,6 +11,7 @@ use serde_json::json;
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
+use tokio::time::interval;
 use tokio_tungstenite::{accept_async, tungstenite::{Message, Result}, WebSocketStream};
 use crate::common::db::DatabasePool;
 
@@ -67,8 +69,13 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
     database_handler::get_users(&database_pool, &mut ws_sender).await;
     database_handler::get_contants(&database_pool, &mut ws_sender).await;
 
+    let mut timer = interval(Duration::from_secs(5));
+
     loop {
         tokio::select! {
+            _ = timer.tick() => {
+                    tx_dbus2.send(SystemCommand::GetNetworkInterfaces).await.expect("Failed to send dbus command");
+            }
             message = rx.recv() => {
                 if let Ok(received_notification) = message {
                     if let Ok(json_msg) = serde_json::to_string(&received_notification) {
@@ -91,7 +98,9 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
                                                     "FLASH_LED" => {
                                                         if let Some(message) = parsed_message.d {
                                                             if let Ok(led_data) = serde_json::from_value::<LEDControlData>(message) {
-                                                                led::flash_led(led_data.color).await.expect("Failed to flash LED");
+                                                                tokio::task::spawn_blocking(|| {
+                                                                   led::flash_led(led_data.color).expect("Failed to flash LED");
+                                                                });
                                                             }
                                                         }
                                                     },

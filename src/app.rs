@@ -43,7 +43,7 @@ pub async fn launch(conf: &Config) {
         }
     });
 
-    let control_bluetooth_handle = tokio::task::spawn_blocking(|| {
+    std::thread::spawn(|| {
         if let Err(e) = system_handler::system_handler(tx2, rx_dbus) {
             error!("Failed in bluetooth_handler: {}", e);
         }
@@ -53,7 +53,5 @@ pub async fn launch(conf: &Config) {
 
     // Send shutdown signal
     let _ = shutdown_tx.send(());
-
-    let _ = control_bluetooth_handle.await;
 }
 

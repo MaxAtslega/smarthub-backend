@@ -10,4 +10,3 @@ readonly LINK_FLAGS='-L /usr/arm-linux-gnueabihf/lib/ -L /usr/lib/arm-linux-gnue
 chmod -R 777 ./target/
 
 RUSTFLAGS=${LINK_FLAGS} cross build --release --target=${TARGET_ARCH}
-
