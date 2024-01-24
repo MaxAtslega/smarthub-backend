@@ -115,6 +115,11 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
                                                             error!("Failed to reboot: {}", e);
                                                         }
                                                     },
+                                                     "SHUTDOWN" => {
+                                                        if let Err(e) = shutdown_system() {
+                                                            error!("Failed to shutdown: {}", e);
+                                                        }
+                                                    },
                                                     "LISTING_UPDATE" => {
                                                         tx_dbus.send(SystemCommand::ListingSystemUpdates).await.expect("Failed to send dbus command");
                                                     },
@@ -274,6 +279,16 @@ fn reboot_system() -> io::Result<()> {
     debug!("Rebooting system...");
     Command::new("sudo")
         .arg("reboot")
+        .status()?;
+
+    Ok(())
+}
+
+fn shutdown_system() -> io::Result<()> {
+    debug!("Rebooting system...");
+    Command::new("sudo")
+        .arg("shutdown")
+        .arg("now")
         .status()?;
 
     Ok(())
