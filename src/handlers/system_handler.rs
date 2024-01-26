@@ -1,9 +1,5 @@
 use std::collections::HashMap;
-
-
-
 use std::sync::Arc;
-
 
 use dbus::arg::{RefArg, Variant};
 use dbus::Message;
@@ -41,7 +37,28 @@ pub async fn system_handler(tx: tokio::sync::broadcast::Sender<WebSocketMessage>
     let (incoming_signal, stream) = conn.add_match(mr).await?.stream();
 
     // Create a future calling D-Bus method each time the interval generates a tick
-    futures::join!(handle_dbus_events(&tx, &conn, stream), handle_dbus_commands(rx_dbus, conn.clone(), tx.clone()));
+    let handle_dbus_events_future = handle_dbus_events(&tx, &conn, stream);
+    let handle_dbus_commands_future = handle_dbus_commands(rx_dbus, conn.clone(), tx.clone());
+
+    let print_to_console_future = async {
+        let mut interval = tokio::time::interval( tokio::time::Duration::from_secs(5));
+
+        loop {
+            if let Err(e) = get_network_interfaces(tx.clone()).await {
+                error!("Failed to perform system update: {}", e);
+            }
+
+            interval.tick().await;
+        }
+    };
+
+
+
+    futures::join!(
+        handle_dbus_events_future,
+        handle_dbus_commands_future,
+        print_to_console_future
+    );
 
     conn.remove_match(incoming_signal.token()).await?;
 

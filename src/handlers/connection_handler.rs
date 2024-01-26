@@ -64,18 +64,12 @@ pub async fn handle_connection(peer: SocketAddr, stream: TcpStream, _tx: tokio::
 
     let tx_dbus2 = tx_dbus.clone();
     tx_dbus2.send(SystemCommand::GetAllBluetoothDevices).await.expect("Failed to send dbus command");
-    tx_dbus2.send(SystemCommand::GetNetworkInterfaces).await.expect("Failed to send dbus command");
 
     database_handler::get_users(&database_pool, &mut ws_sender).await;
     database_handler::get_contants(&database_pool, &mut ws_sender).await;
 
-    let mut timer = interval(Duration::from_secs(5));
-
     loop {
         tokio::select! {
-            _ = timer.tick() => {
-                    tx_dbus2.send(SystemCommand::GetNetworkInterfaces).await.expect("Failed to send dbus command");
-            }
             message = rx.recv() => {
                 if let Ok(received_notification) = message {
                     if let Ok(json_msg) = serde_json::to_string(&received_notification) {
