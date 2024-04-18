@@ -7,7 +7,7 @@ edition = "2021"
 diesel = { version = "2.1.4", features = ["sqlite", "r2d2", "chrono"] }
 log = "0.4.20"
 
-rppal = "0.16.1"
+rppal = "0.17.1"
 
 serde = "1.0.193"
 serde_derive = "1.0.193"
@@ -17,14 +17,14 @@ thiserror = "1.0.51"
 
 tokio = { version = "1.35.1", features = ["rt", "rt-multi-thread", "macros", "time", "sync", "process"] }
 chrono = { version = "0.4.31", features = ["serde"] }
-config = "0.13.4"
+config = "0.14.0"
 
 toml = { version = "0.8.8", features = [] }
 simplelog = "0.12.1"
 
-mfrc522 = "0.6.1"
-embedded-hal = "0.2.7"
-linux-embedded-hal = "0.3.2"
+mfrc522 = "0.7.0"
+embedded-hal = "1.0.0"
+linux-embedded-hal = "0.4.0"
 
 tungstenite = "0.21.0"
 tokio-tungstenite = "0.21.0"
@@ -38,3 +38,4 @@ lazy_static = "1.4.0"
 dbus-tokio = "0.7.6"
 libc = { version = "0.2.151", features = [] }
 evdev = { version = "0.12.1", features = ["tokio"] }
+embedded-hal-bus = "0.1.0"

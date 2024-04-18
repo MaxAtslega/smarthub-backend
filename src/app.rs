@@ -18,38 +18,45 @@ pub async fn launch(conf: &Config) {
 
     let db_connection = db::establish_connection_pool(&conf.database.connection_string);
 
+    // Messaging setup for WebSocket and system handlers
     let (tx, rx1) = broadcast::channel::<WebSocketMessage>(10);
     let (tx_dbus, rx_dbus): (Sender<SystemCommand>, Receiver<SystemCommand>) = channel::<SystemCommand>(32);
-
+   
+    // Clone tx for multiple uses
     let tx1 = tx.clone();
     let tx2 = tx.clone();
     let tx3 = tx.clone();
-
+    
+    // Shared state across threads
     let last_event_time = Arc::new(Mutex::new(Instant::now()));
-
     let last_event_time_clone = Arc::clone(&last_event_time);
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
-    tokio::task::spawn_blocking(|| {
+    // Launch hardware handlers in separate threads
+    std::thread::spawn(|| {
         if let Err(e) = rfid::control_rfid(tx, shutdown_rx, last_event_time) {
             error!("Failed in control_rfid: {}", e);
         }
     });
-
+    
+    // Launch system handler
     std::thread::spawn(|| {
         if let Err(e) = hardware::display::display_handler_sleep(tx1, last_event_time_clone) {
             error!("Failed in systemd handler sleep: {}", e);
         }
     });
-
+    
+    // Initialize and run the WebSocket server
     std::thread::spawn(|| {
         if let Err(e) = system_handler::system_handler(tx2, rx_dbus) {
             error!("Failed in bluetooth_handler: {}", e);
         }
     });
 
-    websocket::init(&conf.websocket, tx3, rx1, tx_dbus, db_connection).await.expect("Failed to start websocket server");
+    if let Err(e) = websocket::init(&conf.websocket, tx3, rx1, tx_dbus, db_connection).await {
+        error!("WebSocket initialization failed: {}", e);
+    }
 
     // Send shutdown signal
     let _ = shutdown_tx.send(());

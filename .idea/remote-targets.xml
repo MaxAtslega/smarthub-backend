@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <option name="projectDefaultTargetUuid" value="0c02cee6-ef56-498e-8558-87b414a235a2" />
+    <targets>
+      <target name="WSL - Ubuntu" type="wsl" uuid="0c02cee6-ef56-498e-8558-87b414a235a2">
+        <config>
+          <option name="distributionMsId" value="Ubuntu" />
+          <option name="projectRootOnTarget" value="{exitCode=0, timeout=false, cancelled=false, stdout=/mnt/c/Users/maxat/AppData/Local/Programs/RustRover/jbr/bin&#10;, stderr=}/smarthub-backend" />
+        </config>
+        <ContributedStateBase type="RsLanguageRuntime">
+          <config>
+            <option name="cargoPath" value="/home/max/.cargo/bin/cargo" />
+            <option name="cargoVersion" value="1.77.2 (e52e36006 2024-03-26)" />
+            <option name="rustcPath" value="/home/max/.cargo/bin/rustc" />
+            <option name="rustcVersion" value="1.77.2 (25ef9e3d8 2024-04-09)" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>

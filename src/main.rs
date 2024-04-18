@@ -1,4 +1,3 @@
-#![feature(ptr_metadata)]
 extern crate dbus;
 extern crate diesel;
 

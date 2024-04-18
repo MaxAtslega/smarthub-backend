@@ -2,14 +2,16 @@ use std::fs::File;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use linux_embedded_hal::{Pin, Spidev};
 use linux_embedded_hal::spidev::{SpidevOptions, SpiModeFlags};
-use linux_embedded_hal::sysfs_gpio::Direction;
-use mfrc522::comm::eh02::spi::SpiInterface;
+use linux_embedded_hal::{Delay, SpidevBus, SysfsPin};
+use linux_embedded_hal::sysfs_gpio::{Direction};
+use mfrc522::comm::blocking::spi::SpiInterface;
 use mfrc522::Mfrc522;
 use serde_json::json;
 use tokio::sync::broadcast::Sender;
 use tokio::sync::oneshot;
+use embedded_hal::delay::DelayNs;
+use embedded_hal_bus::spi::ExclusiveDevice;
 
 use crate::common::utils;
 use crate::hardware::display::{get_display_power, set_display_power};
@@ -22,22 +24,27 @@ pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot
     }
     let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power").unwrap();
 
-    let mut spi = Spidev::open("/dev/spidev0.0").unwrap();
+    let mut delay = Delay;
+    
+    let mut spi = SpidevBus::open("/dev/spidev0.0").unwrap();
     let options = SpidevOptions::new()
         .max_speed_hz(1_000_000)
-        .mode(SpiModeFlags::SPI_MODE_0)
+        .mode(SpiModeFlags::SPI_MODE_0 | SpiModeFlags::SPI_NO_CS)
         .build();
     spi.configure(&options).unwrap();
 
-    let pin = Pin::new(22);
+    let pin = SysfsPin::new(22);
     pin.export().unwrap();
     while !pin.is_exported() {}
-
+    delay.delay_ms(500u32);
+    
+    let pin = pin.into_output_pin(embedded_hal::digital::PinState::High).unwrap();
+    
     pin.set_direction(Direction::Out).unwrap();
     pin.set_value(1).unwrap();
 
-
-    let itf = SpiInterface::new(spi).with_nss(pin);
+    let spi = ExclusiveDevice::new(spi, pin, Delay);
+    let itf = SpiInterface::new(spi);
     let mut mfrc522 = Mfrc522::new(itf).init().unwrap();
 
     let vers = mfrc522.version().unwrap();
@@ -87,7 +94,7 @@ pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot
             break;
         }
 
-        std::thread::sleep(Duration::from_millis(100));
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 
     Ok(())
