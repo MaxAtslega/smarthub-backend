@@ -1,7 +1,6 @@
 use std::{io, net::SocketAddr};
 use std::fs::File;
 use std::process::Command;
-use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
 use futures_util::stream::{SplitSink, SplitStream};
@@ -11,7 +10,6 @@ use serde_json::json;
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
-use tokio::time::interval;
 use tokio_tungstenite::{accept_async, tungstenite::{Message, Result}, WebSocketStream};
 use crate::common::db::DatabasePool;
 

@@ -13,7 +13,6 @@ use log::{error, info};
 use tokio::sync::broadcast::Sender;
 use tokio::sync::mpsc::Receiver;
 
-
 use crate::enums::system_command::SystemCommand;
 use crate::handlers::bluetooth_handler::{handle_bluetooth_device_command, handle_bluetooth_discovery_command, handle_get_all_bluetooth_devices_command, send_bluetooth_device_boned_event, send_bluetooth_device_connected_event, send_bluetooth_device_paired_event, send_bluetooth_device_trusted_event, send_bluetooth_discover_event, send_new_bluetooth_device_event};
 use crate::handlers::network_handler::{connect_to_wifi, get_network_interfaces, scan_wifi};
@@ -21,8 +20,8 @@ use crate::handlers::update_handler::{get_available_updates, perform_system_upda
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
-pub async fn system_handler(tx: tokio::sync::broadcast::Sender<WebSocketMessage>, rx_dbus: Receiver<SystemCommand>) -> Result<(), Box<dyn std::error::Error>> {
-    let (resource, conn) = connection::new_system_sync()?;
+pub async fn system_handler(tx: Sender<WebSocketMessage>, rx_dbus: Receiver<SystemCommand>) -> Result<(), String> {
+    let (resource, conn) = connection::new_system_sync().unwrap();
 
     tokio::spawn(async {
         let err = resource.await;
@@ -34,7 +33,7 @@ pub async fn system_handler(tx: tokio::sync::broadcast::Sender<WebSocketMessage>
     // Process incoming messages
     let mr = MatchRule::new();
 
-    let (incoming_signal, stream) = conn.add_match(mr).await?.stream();
+    let (incoming_signal, stream) = conn.add_match(mr).await.unwrap().stream();
 
     // Create a future calling D-Bus method each time the interval generates a tick
     let handle_dbus_events_future = handle_dbus_events(&tx, &conn, stream);
@@ -60,7 +59,7 @@ pub async fn system_handler(tx: tokio::sync::broadcast::Sender<WebSocketMessage>
         print_to_console_future
     );
 
-    conn.remove_match(incoming_signal.token()).await?;
+    conn.remove_match(incoming_signal.token()).await.unwrap();
 
     Ok(())
 }

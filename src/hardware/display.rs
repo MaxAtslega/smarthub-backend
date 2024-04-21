@@ -8,17 +8,21 @@ use futures_util::StreamExt;
 use log::{debug, error};
 use serde_json::json;
 use tokio::time::{interval};
+use crate::common::utils;
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
-pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketMessage>, last_event_time: Arc<Mutex<Instant>>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketMessage>, last_event_time: Arc<Mutex<Instant>>) -> Result<(), String> {
+    if !utils::is_raspberry_pi_4b() {
+        return Err("This app is only compatible with Raspberry Pi 4 Model B".to_string());
+    }
     // Open the touchscreen device file
     let device_path = "/dev/input/event2";
     // Open the bl_power file for controlling the display power
-    let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power")?;
+    let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power").unwrap();
 
     // Create a new Device from the file
-    let device = Device::open(device_path)?;
+    let device = Device::open(device_path).unwrap();
 
     // Print device information
     debug!("Device: {}", device.name().unwrap_or("Unknown device"));
@@ -26,7 +30,7 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
     // Track the last time an event occurred
     let mut last_event_time2 = last_event_time.lock().unwrap();
 
-    let mut events = device.into_event_stream()?;
+    let mut events = device.into_event_stream().unwrap();
     let mut timer = interval(Duration::from_secs(10));
 
     loop {
