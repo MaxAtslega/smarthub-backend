@@ -1,7 +1,6 @@
 pub mod user;
 pub mod websocket;
 pub mod interface;
-mod user_actions;
-mod user_requests;
-mod user_rfid;
+pub mod user_actions;
+pub mod user_requests;
 pub(crate) mod constants;

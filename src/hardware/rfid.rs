@@ -2,26 +2,30 @@ use std::fs::File;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use linux_embedded_hal::spidev::{SpidevOptions, SpiModeFlags};
+use embedded_hal::delay::DelayNs;
+use embedded_hal_bus::spi::ExclusiveDevice;
 use linux_embedded_hal::{Delay, SpidevBus, SysfsPin};
-use linux_embedded_hal::sysfs_gpio::{Direction};
+use linux_embedded_hal::spidev::{SpidevOptions, SpiModeFlags};
+use linux_embedded_hal::sysfs_gpio::Direction;
 use mfrc522::comm::blocking::spi::SpiInterface;
 use mfrc522::Mfrc522;
 use serde_json::json;
 use tokio::sync::broadcast::Sender;
 use tokio::sync::oneshot;
-use embedded_hal::delay::DelayNs;
-use embedded_hal_bus::spi::ExclusiveDevice;
 
+use crate::common::db::DatabasePool;
 use crate::common::utils;
 use crate::hardware::display::{get_display_power, set_display_power};
+use crate::models::user_actions::UserAction;
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
-pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot::Receiver<()>, last_event_time: Arc<Mutex<Instant>>) -> Result<(), String> {
+pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot::Receiver<()>, last_event_time: Arc<Mutex<Instant>>, db_pool: DatabasePool) -> Result<(), String> {
     if !utils::is_raspberry_pi_4b() {
-        return Err("This app is only compatible with Raspberry Pi 4 Model B".to_string());
+        return Err("It is only compatible with Raspberry Pi 4 Model B".to_string());
     }
+    let mut conn = db_pool.get().expect("Failed to connect to the database in rfid controller");
+
     let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power").unwrap();
 
     let mut delay = Delay;
@@ -61,13 +65,20 @@ pub async fn control_rfid(tx: Sender<WebSocketMessage>, mut shutdown_rx: oneshot
 
                 // Check if the UID is different from the last sent or if 5 seconds have passed
                 if last_uid.as_ref() != Some(&uid_str) || last_sent.elapsed() >= Duration::from_secs(5) {
-                    let notif = WebSocketMessage {
-                        t: Some("RFID_DETECT".to_string()),
-                        op: 1,
-                        d: Some(json!(uid.as_bytes())),
+                    let action_result = UserAction::get_by_rfid_id(&uid_str, &mut conn);
+
+                    let response = match action_result {
+                        Ok(Some(action)) => json!(action),
+                        _ => json!({ "rfid_uid": uid_str }), // Default response if action is not found
                     };
 
-                    tx.send(notif).unwrap();
+                    let rfid_notification = WebSocketMessage {
+                        t: Some("RFID_DETECT".to_string()),
+                        op: 1,
+                        d: Some(response),
+                    };
+
+                    tx.send(rfid_notification).unwrap();
 
                     if get_display_power().contains("1") {
                         set_display_power(&mut bl_power_file, true);

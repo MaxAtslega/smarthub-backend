@@ -1,8 +1,10 @@
 use std::error::Error;
 use std::fs;
+
 use serde_json::json;
 use tokio::process::Command;
 use tokio::sync::broadcast::Sender;
+
 use crate::models::websocket::WebSocketMessage;
 use crate::network::interfaces::get_interfaces;
 use crate::network::wifi_scan;
@@ -79,3 +81,11 @@ pub async fn connect_to_wifi(ssid: String, psk: String) -> Result<(), Box<dyn Er
 
     Ok(())
 }
+
+pub async fn disconnect_wifi() -> Result<(), Box<dyn Error>> {
+    create_wpa_supplicant_conf(String::from(""), String::from("")).await?;
+    restart_wpa_supplicant().await?;
+
+    Ok(())
+}
+

@@ -4,7 +4,7 @@ environment = "dev"
 [log]
 file = "latest.api.log"
 
-[websocket]
+[server]
 address = "0.0.0.0"
 port = 6814
 

@@ -6,16 +6,14 @@ use dbus::Message;
 use dbus::message::MatchRule;
 use dbus::nonblock::SyncConnection;
 use dbus_tokio::connection;
-
 use futures::channel::mpsc::UnboundedReceiver;
-
 use log::{error, info};
 use tokio::sync::broadcast::Sender;
 use tokio::sync::mpsc::Receiver;
 
 use crate::enums::system_command::SystemCommand;
 use crate::handlers::bluetooth_handler::{handle_bluetooth_device_command, handle_bluetooth_discovery_command, handle_get_all_bluetooth_devices_command, send_bluetooth_device_boned_event, send_bluetooth_device_connected_event, send_bluetooth_device_paired_event, send_bluetooth_device_trusted_event, send_bluetooth_discover_event, send_new_bluetooth_device_event};
-use crate::handlers::network_handler::{connect_to_wifi, get_network_interfaces, scan_wifi};
+use crate::handlers::network_handler::{connect_to_wifi, disconnect_wifi, get_network_interfaces, scan_wifi};
 use crate::handlers::update_handler::{get_available_updates, perform_system_update};
 use crate::models::websocket::WebSocketMessage;
 
@@ -50,8 +48,6 @@ pub async fn system_handler(tx: Sender<WebSocketMessage>, rx_dbus: Receiver<Syst
             interval.tick().await;
         }
     };
-
-
 
     futures::join!(
         handle_dbus_events_future,
@@ -113,6 +109,12 @@ async fn handle_dbus_commands(mut rx: Receiver<SystemCommand>, conn: Arc<SyncCon
             }
             SystemCommand::ConnectWifi(ssid, psk) => {
                 if let Err(e) = connect_to_wifi(ssid, psk).await {
+                    error!("Failed to perform system update: {}", e);
+                }
+            }
+
+            SystemCommand::DisconnectWifi => {
+                if let Err(e) = disconnect_wifi().await {
                     error!("Failed to perform system update: {}", e);
                 }
             }

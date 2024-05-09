@@ -11,5 +11,6 @@ pub(crate) enum SystemCommand {
     ListingSystemUpdates,
     GetNetworkInterfaces,
     WlanScan,
+    DisconnectWifi,
     ConnectWifi(String, String),
 }

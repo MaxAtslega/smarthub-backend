@@ -3,18 +3,20 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+
 use evdev::{Device, EventType};
 use futures_util::StreamExt;
 use log::{debug, error};
 use serde_json::json;
-use tokio::time::{interval};
+use tokio::time::interval;
+
 use crate::common::utils;
 use crate::models::websocket::WebSocketMessage;
 
 #[tokio::main]
 pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketMessage>, last_event_time: Arc<Mutex<Instant>>) -> Result<(), String> {
     if !utils::is_raspberry_pi_4b() {
-        return Err("This app is only compatible with Raspberry Pi 4 Model B".to_string());
+        return Err("It is only compatible with Raspberry Pi 4 Model B".to_string());
     }
     // Open the touchscreen device file
     let device_path = "/dev/input/event2";
@@ -61,17 +63,15 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
             // Every second
             _ = timer.tick() => {
                 let elapsed_time = Instant::now() - *last_event_time2;
-                if elapsed_time >= Duration::from_secs(300) {
-                    if get_display_power().contains("0") {
-                        let notification = WebSocketMessage {
-                            t: Some("DISPLAY_STATUS".to_string()),
-                            op: 0,
-                            d: Some(json!({"status": "off"})),
-                        };
+                if elapsed_time >= Duration::from_secs(300) && get_display_power().contains("0") {
+                    let notification = WebSocketMessage {
+                        t: Some("DISPLAY_STATUS".to_string()),
+                        op: 0,
+                        d: Some(json!({"status": "off"})),
+                    };
 
-                        tx.send(notification).unwrap();
-                        set_display_power(&mut bl_power_file, false);
-                    }
+                    tx.send(notification).unwrap();
+                    set_display_power(&mut bl_power_file, false);
                 }
             }
         }

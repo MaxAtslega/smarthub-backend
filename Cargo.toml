@@ -26,9 +26,6 @@ mfrc522 = "0.7.0"
 embedded-hal = "1.0.0"
 linux-embedded-hal = "0.4.0"
 
-tungstenite = "0.21.0"
-tokio-tungstenite = "0.21.0"
-
 futures-util = { version = "0.3.29", features = [] }
 futures = "0.3.30"
 
@@ -39,3 +36,5 @@ dbus-tokio = "0.7.6"
 libc = { version = "0.2.151", features = [] }
 evdev = { version = "0.12.1", features = ["tokio"] }
 embedded-hal-bus = "0.1.0"
+http = "1.0.0"
+axum = { version = "0.7.5", features = ["ws"] }
