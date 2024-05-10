@@ -40,6 +40,15 @@ pub async fn post_user(
 ) -> Result<StatusCode, (StatusCode, Json<ErrorMessage>)> {
     let mut conn = state.db_pool.get().map_err(internal_error)?;
 
+    if new_user.username.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorMessage {
+                message: "Username cannot be empty".to_string(),
+            }),
+        ));
+    }
+
     let existing_user = User::get_by_username(&new_user.username, &mut conn);
     if let Ok(_) = existing_user {
         return Err((StatusCode::FORBIDDEN, Json(ErrorMessage { message: "User with the same name already exists".to_string() })));
@@ -72,6 +81,15 @@ pub async fn put_user(
 ) -> Result<StatusCode, (StatusCode, Json<ErrorMessage>)> {
     let mut conn = state.db_pool.get().map_err(internal_error)?;
 
+    if updated_user.username.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorMessage {
+                message: "Username cannot be empty".to_string(),
+            }),
+        ));
+    }
+    
     let user_result = User::update(user_id, updated_user, &mut conn);
     match user_result {
         Ok(_) => Ok(StatusCode::NO_CONTENT),

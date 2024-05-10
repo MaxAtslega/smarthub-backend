@@ -36,7 +36,7 @@ pub async fn get_info() -> Result<Json<InfoResponse>, (StatusCode, String)> {
     }))
 }
 
-pub async fn get_reboot() -> Result<(), (StatusCode, Json<ErrorMessage>)> {
+pub async fn post_reboot() -> Result<(), (StatusCode, Json<ErrorMessage>)> {
     debug!("Rebooting system...");
     let status = Command::new("sudo")
         .arg("reboot")
@@ -48,7 +48,7 @@ pub async fn get_reboot() -> Result<(), (StatusCode, Json<ErrorMessage>)> {
     }
 }
 
-pub async fn get_shutdown() -> Result<Json<()>, (StatusCode, Json<ErrorMessage>)> {
+pub async fn post_shutdown() -> Result<Json<()>, (StatusCode, Json<ErrorMessage>)> {
     debug!("Shutting down system...");
     let status = Command::new("sudo")
         .arg("shutdown")

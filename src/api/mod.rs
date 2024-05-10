@@ -11,11 +11,12 @@ use serde_derive::Serialize;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc::Sender;
+use tower_http::cors::CorsLayer;
 
 use crate::api::actions::{delete_user_action_by_id, get_user_actions_by_user_id, post_user_action, put_user_action};
 use crate::api::constants::{delete_constant_by_user_id_and_name, get_constants_by_user_id, post_constant, put_constant};
 use crate::api::requests::{delete_user_request_by_id, get_user_requests_by_user_id, post_user_request, put_user_request};
-use crate::api::system::{get_info, get_reboot, get_shutdown};
+use crate::api::system::{get_info, post_reboot, post_shutdown};
 use crate::api::users::{delete_user, get_user_by_id, get_users, post_user, put_user};
 use crate::common::db::DatabasePool;
 use crate::config::ServerConf;
@@ -48,8 +49,8 @@ pub async fn init(web_socket_conf: &ServerConf, tx: broadcast::Sender<WebSocketM
     let app = Router::new()
         .route("/ws", get(websocket_handler))
         .route("/", get(get_info))
-        .route("/system/reboot", get(get_reboot))
-        .route("/system/shutdown", get(get_shutdown))
+        .route("/system/reboot", post(post_reboot))
+        .route("/system/shutdown", post(post_shutdown))
         .route("/users", get(get_users))
         .route("/users", post(post_user))
         .route("/users/:user_id", get(get_user_by_id))
@@ -67,6 +68,7 @@ pub async fn init(web_socket_conf: &ServerConf, tx: broadcast::Sender<WebSocketM
         .route("/requests", post(post_user_request))
         .route("/requests/:id", delete(delete_user_request_by_id))
         .route("/requests/:id", put(put_user_request))
+        .layer(CorsLayer::permissive())
         .with_state(app_state);
 
     let try_socket = TcpListener::bind(&address).await;
