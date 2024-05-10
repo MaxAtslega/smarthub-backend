@@ -81,13 +81,15 @@ pub async fn put_user(
 ) -> Result<StatusCode, (StatusCode, Json<ErrorMessage>)> {
     let mut conn = state.db_pool.get().map_err(internal_error)?;
 
-    if updated_user.username.trim().is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorMessage {
-                message: "Username cannot be empty".to_string(),
-            }),
-        ));
+    if let Some(ref username) = updated_user.username {
+        if username.trim().is_empty() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ErrorMessage {
+                    message: "Username cannot be empty".to_string(),
+                }),
+            ));
+        }
     }
     
     let user_result = User::update(user_id, updated_user, &mut conn);
