@@ -19,7 +19,7 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
         return Err("It is only compatible with Raspberry Pi 4 Model B".to_string());
     }
     // Open the touchscreen device file
-    let device_path = "/dev/input/event2";
+    let device_path = "/dev/input/event3";
     // Open the bl_power file for controlling the display power
     let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power").unwrap();
 
