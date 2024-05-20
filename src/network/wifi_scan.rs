@@ -9,7 +9,7 @@ pub struct Wifi {
     pub ssid: String,
     pub channel: String,
     pub signal_level: String,
-    pub security: String,
+    pub capability: String,
 }
 
 pub async fn scan() -> Result<Vec<Wifi>, Error> {
@@ -70,6 +70,8 @@ fn parse_iw_dev_scan(network_list: &str) -> Result<Vec<Wifi>, Error> {
             wifi.channel = channel;
         } else if let Ok(ssid) = extract_value(line, "\tSSID: ", None) {
             wifi.ssid = ssid;
+        } else if let Ok(capability) = extract_value(line, "\tcapability: ", None) {
+            wifi.capability = capability;
         }
 
         if !wifi.mac.is_empty()

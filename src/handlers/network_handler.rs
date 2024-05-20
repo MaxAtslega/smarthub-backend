@@ -8,6 +8,7 @@ use tokio::sync::broadcast::Sender;
 use crate::models::websocket::WebSocketMessage;
 use crate::network::interfaces::get_interfaces;
 use crate::network::wifi_scan;
+use std::fmt::Write as FmtWrite;
 
 pub async fn get_network_interfaces(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error>>{
     let interfaces = get_interfaces();
@@ -44,7 +45,8 @@ pub async fn scan_wifi(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error
                 "ssid": network.ssid,
                 "channel": network.channel,
                 "signal_level": network.signal_level,
-                "security": network.security
+                "capability": network.capability
+
             })),
         };
 
@@ -54,13 +56,34 @@ pub async fn scan_wifi(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error
     Ok(())
 }
 
+/// Creates a wpa_supplicant configuration file for a given SSID and PSK.
+///
+/// # Arguments
+///
+/// * `ssid` - The SSID of the Wi-Fi network.
+/// * `psk` - The Pre-Shared Key (password) for the Wi-Fi network. If empty, it denotes an open network.
+///
+/// # Returns
+///
+/// A result indicating success or failure. On success, returns `Ok(())`. On failure, returns an error.
 async fn create_wpa_supplicant_conf(ssid: String, psk: String) -> Result<(), Box<dyn Error>> {
-    let config = format!(
-        "network={{\n\tssid=\"{}\"\n\tpsk=\"{}\"\n}}",
-        ssid,
-        psk
-    );
+    let mut config = String::new();
 
+    // Start constructing the network configuration
+    writeln!(&mut config, "network={{")?;
+    writeln!(&mut config, "\tssid=\"{}\"", ssid)?;
+
+    // Conditionally add the PSK or mark as open network
+    if !psk.is_empty() {
+        writeln!(&mut config, "\tpsk=\"{}\"", psk)?;
+    } else {
+        writeln!(&mut config, "\tkey_mgmt=NONE")?;
+    }
+
+    // Close the network configuration block
+    writeln!(&mut config, "}}")?;
+
+    // Write the configuration to the wpa_supplicant file
     fs::write("/etc/wpa_supplicant/wpa_supplicant.conf", config)?;
     Ok(())
 }
