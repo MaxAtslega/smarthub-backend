@@ -38,6 +38,7 @@ diesel::table! {
         theme -> Integer,
         birthday -> Date,
         language -> Text,
+        keyboard -> Text,
         created_on -> Timestamp,
     }
 }

@@ -14,6 +14,7 @@ pub struct User {
     pub theme: i32,
     pub birthday: NaiveDate,
     pub language: String,
+    pub keyboard: String,
     pub created_on: NaiveDateTime,
 }
 
@@ -24,6 +25,7 @@ pub struct NewUser {
     pub birthday: chrono::NaiveDate,
     pub theme: i32,
     pub language: String,
+    pub keyboard: String,
 }
 
 #[derive(AsChangeset, Deserialize, Serialize)]
@@ -33,6 +35,7 @@ pub struct UserChangeset {
     pub birthday: Option<chrono::NaiveDate>,
     pub theme: Option<i32>,
     pub language: Option<String>,
+    pub keyboard: String,
 }
 
 impl User {

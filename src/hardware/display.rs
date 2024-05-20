@@ -18,12 +18,17 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
     if !utils::is_raspberry_pi_4b() {
         return Err("It is only compatible with Raspberry Pi 4 Model B".to_string());
     }
-    // Open the touchscreen device file
-    let device_path = "/dev/input/event3";
     // Open the bl_power file for controlling the display power
     let mut bl_power_file = File::create("/sys/class/backlight/10-0045/bl_power").unwrap();
 
     // Create a new Device from the file
+    let device_path = "/dev/input/by-path/platform-fe205000.i2c-event";
+
+    while !std::path::Path::new(device_path).exists() {
+        debug!("Waiting for {} to become available...", device_path);
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    }
+    
     let device = Device::open(device_path).unwrap();
 
     // Print device information
@@ -39,23 +44,20 @@ pub async fn display_handler_sleep(tx: tokio::sync::broadcast::Sender<WebSocketM
         tokio::select! {
             Some(msg) = events.next() => {
                 if let Ok(event) = msg {
-                    match event.event_type() {
-                        EventType::ABSOLUTE => {
-                            if get_display_power().contains("1") {
-                                set_display_power(&mut bl_power_file, true);
+                    if event.event_type() == EventType::ABSOLUTE {
+                        if get_display_power().contains("1") {
+                            set_display_power(&mut bl_power_file, true);
 
-                                let notification = WebSocketMessage {
-                                    t: Some("DISPLAY_STATUS".to_string()),
-                                    op: 0,
-                                    d: Some(json!({"status": "on"})),
-                                };
+                            let notification = WebSocketMessage {
+                                t: Some("DISPLAY_STATUS".to_string()),
+                                op: 0,
+                                d: Some(json!({"status": "on"})),
+                            };
 
-                                tx.send(notification).unwrap();
-                            }
-
-                            *last_event_time2 = Instant::now();
+                            tx.send(notification).unwrap();
                         }
-                        _ => {}
+
+                        *last_event_time2 = Instant::now();
                     }
                 }
             }
