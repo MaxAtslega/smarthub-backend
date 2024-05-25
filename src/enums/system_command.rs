@@ -9,8 +9,4 @@ pub(crate) enum SystemCommand {
     UntrustBluetoothDevice(String),
     UpdateSystem,
     ListingSystemUpdates,
-    GetNetworkInterfaces,
-    WlanScan,
-    DisconnectWifi,
-    ConnectWifi(String, String),
 }

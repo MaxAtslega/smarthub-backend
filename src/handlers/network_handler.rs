@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fs;
+use serde_derive::Serialize;
 
 use serde_json::json;
 use tokio::process::Command;
@@ -7,8 +8,15 @@ use tokio::sync::broadcast::Sender;
 
 use crate::models::websocket::WebSocketMessage;
 use crate::network::interfaces::get_interfaces;
-use crate::network::wifi_scan;
-use std::fmt::Write as FmtWrite;
+
+#[derive(Serialize)]
+pub struct ScanResult {
+    bssid: String,
+    frequency: String,
+    signal_level: String,
+    flags: String,
+    ssid: String,
+}
 
 pub async fn get_network_interfaces(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error>>{
     let interfaces = get_interfaces();
@@ -28,87 +36,133 @@ pub async fn get_network_interfaces(tx: Sender<WebSocketMessage>) -> Result<(), 
     Ok(())
 }
 
+pub async fn get_current_network_status(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error>> {
+    let output_result = Command::new("wpa_cli")
+        .arg("status")
+        .arg("-i")
+        .arg("wlan0")
+        .output().await;
 
-pub async fn scan_wifi(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error>>{
-    let wifi_networks = wifi_scan::scan().await;
+    match output_result {
+        Ok(output) => {
+            if output.status.success() {
+                let output_str = String::from_utf8_lossy(&output.stdout);
+                let mut ssid = String::new();
+                let mut status = String::new();
+                let mut ip_address = String::new();
 
-    if wifi_networks.is_err() {
-        return Err(Box::new(wifi_networks.err().unwrap()));
+                for line in output_str.lines() {
+                    if line.starts_with("ssid=") {
+                        ssid = line.split('=').nth(1).unwrap_or("").to_string();
+                    }
+                    if line.starts_with("wpa_state=") {
+                        status = line.split('=').nth(1).unwrap_or("").to_string();
+                    }
+                    if line.starts_with("ip_address=") {
+                        ip_address = line.split('=').nth(1).unwrap_or("").to_string();
+                    }
+                }
+
+                let notification = WebSocketMessage {
+                    op: 0,
+                    t: Some("NETWORK_STATUS".to_string()),
+                    d: Some(json!({
+                        "ssid": ssid,
+                        "status": status,
+                        "ip_address": ip_address,
+                    })),
+                };
+
+                tx.send(notification).expect("Failed to send notification");
+                Ok(())
+            } else {
+                let notification = WebSocketMessage {
+                    op: 0,
+                    t: Some("NETWORK_STATUS".to_string()),
+                    d: Some(json!({
+                        "status": "DEACTIVATED",
+                    })),
+                };
+
+                tx.send(notification)?;
+
+                Ok(())
+            }
+        }
+        Err(_) => {
+            let notification = WebSocketMessage {
+                op: 0,
+                t: Some("NETWORK_STATUS".to_string()),
+                d: Some(json!({
+                        "status": "DEACTIVATED",
+                    })),
+            };
+
+            tx.send(notification)?;
+            
+            Ok(())
+        },
     }
+}
 
-    for network in wifi_networks.unwrap() {
-        let notification = WebSocketMessage {
-            op: 0,
-            t: Some("WIFI_NETWORK_FOUND".to_string()),
-            d: Some(json!({
-                "mac": network.mac,
-                "ssid": network.ssid,
-                "channel": network.channel,
-                "signal_level": network.signal_level,
-                "capability": network.capability
+pub async fn get_scan_results(tx: Sender<WebSocketMessage>) -> Result<(), Box<dyn Error>> {
+    let output_result = Command::new("wpa_cli")
+        .arg("scan_results")
+        .arg("-i")
+        .arg("wlan0")
+        .output()
+        .await;
 
-            })),
-        };
+    match output_result {
+        Ok(output) => {
+            if output.status.success() {
+                let output_str = String::from_utf8_lossy(&output.stdout);
+                let mut results = Vec::new();
 
-        tx.send(notification).expect("Failed to send notification");
+                for line in output_str.lines().skip(1) { // Skip the header line
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 5 {
+                        results.push(ScanResult {
+                            bssid: parts[0].to_string(),
+                            frequency: parts[1].to_string(),
+                            signal_level: parts[2].to_string(),
+                            flags: parts[3].to_string(),
+                            ssid: parts[4..].join(" "),
+                        });
+                    }
+                }
+
+                let notification = WebSocketMessage {
+                    op: 0,
+                    t: Some("SCAN_RESULTS".to_string()),
+                    d: Some(json!(results)),
+                };
+
+                tx.send(notification)?;
+                
+                Ok(())
+            } else {
+                let notification = WebSocketMessage {
+                    op: 0,
+                    t: Some("SCAN_RESULTS".to_string()),
+                    d: Some(json!([])),
+                };
+
+                tx.send(notification)?;
+
+                Ok(())
+            }
+        }
+        Err(_) => {
+            let notification = WebSocketMessage {
+                op: 0,
+                t: Some("SCAN_RESULTS".to_string()),
+                d: Some(json!([])),
+            };
+
+            tx.send(notification)?;
+
+            Ok(())
+        },
     }
-
-    Ok(())
 }
-
-/// Creates a wpa_supplicant configuration file for a given SSID and PSK.
-///
-/// # Arguments
-///
-/// * `ssid` - The SSID of the Wi-Fi network.
-/// * `psk` - The Pre-Shared Key (password) for the Wi-Fi network. If empty, it denotes an open network.
-///
-/// # Returns
-///
-/// A result indicating success or failure. On success, returns `Ok(())`. On failure, returns an error.
-async fn create_wpa_supplicant_conf(ssid: String, psk: String) -> Result<(), Box<dyn Error>> {
-    let mut config = String::new();
-
-    // Start constructing the network configuration
-    writeln!(&mut config, "network={{")?;
-    writeln!(&mut config, "\tssid=\"{}\"", ssid)?;
-
-    // Conditionally add the PSK or mark as open network
-    if !psk.is_empty() {
-        writeln!(&mut config, "\tpsk=\"{}\"", psk)?;
-    } else {
-        writeln!(&mut config, "\tkey_mgmt=NONE")?;
-    }
-
-    // Close the network configuration block
-    writeln!(&mut config, "}}")?;
-
-    // Write the configuration to the wpa_supplicant file
-    fs::write("/etc/wpa_supplicant/wpa_supplicant.conf", config)?;
-    Ok(())
-}
-
-async fn restart_wpa_supplicant() -> Result<(), Box<dyn Error>> {
-    Command::new("systemctl")
-        .args(&["restart", "wpa_supplicant"])
-        .status()
-        .await?;
-
-    Ok(())
-}
-
-
-pub async fn connect_to_wifi(ssid: String, psk: String) -> Result<(), Box<dyn Error>> {
-    create_wpa_supplicant_conf(ssid, psk).await?;
-    restart_wpa_supplicant().await?;
-
-    Ok(())
-}
-
-pub async fn disconnect_wifi() -> Result<(), Box<dyn Error>> {
-    create_wpa_supplicant_conf(String::from(""), String::from("")).await?;
-    restart_wpa_supplicant().await?;
-
-    Ok(())
-}
-

@@ -6,7 +6,7 @@ use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::SqliteConnection;
 
 use crate::api::{AppState, ErrorMessage, internal_error};
-use crate::models::constants::Constant;
+use crate::models::constants::{Constant, UpdateConstant};
 
 pub async fn get_constants_by_user_id(
     Path(id): Path<i32>,
@@ -57,11 +57,11 @@ pub async fn delete_constant_by_user_id_and_name(
 pub async fn put_constant(
     Path((id, constant_name)): Path<(i32, String)>,
     State(state): State<Arc<AppState>>,
-    Json(new_value): Json<String>,
+    Json(new_value): Json<UpdateConstant>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorMessage>)> {
     let mut conn = state.db_pool.get().map_err(internal_error)?;
 
-    let update_result = Constant::update_value(id, &constant_name, &new_value, &mut conn);
+    let update_result = Constant::update_value(id, &constant_name, &new_value.value, &mut conn);
 
     match update_result {
         Ok(_) => Ok(StatusCode::NO_CONTENT),

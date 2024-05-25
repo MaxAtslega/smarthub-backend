@@ -3,20 +3,14 @@ use std::sync::Arc;
 
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::{SinkExt, StreamExt};
+use log::error;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::api::AppState;
-use crate::enums::led_type::LEDType;
 use crate::enums::system_command::SystemCommand;
 use crate::hardware;
-use crate::hardware::led;
 use crate::models::websocket::WebSocketMessage;
-
-#[derive(Serialize, Deserialize)]
-struct LEDControlData {
-    color: LEDType,
-}
 
 #[derive(Serialize, Deserialize)]
 struct WlanData {
@@ -32,11 +26,6 @@ struct UserDeleteData {
 #[derive(Serialize, Deserialize)]
 struct ConstantData {
     name: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct UserLoginData {
-    id: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -96,25 +85,12 @@ pub async fn handle_connection(stream: WebSocket, state: Arc<AppState>) {
                                                 }
                                             }
                                         },
-                                        1 => { // Op code 1 for notifications
-                                            if let Some(event) = parsed_message.t {
-                                                match event.as_str() {
-                                                    "FLASH_LED" => {
-                                                        if let Some(message) = parsed_message.d {
-                                                            if let Ok(led_data) = serde_json::from_value::<LEDControlData>(message) {
-                                                                tokio::task::spawn_blocking(|| {
-                                                                   led::flash_led(led_data.color).expect("Failed to flash LED");
-                                                                });
-                                                            }
-                                                        }
-                                                    },
-                                                    _ => {}
-                                                }
-                                            }
-                                        },
                                         2 => { // Op code 2 for bluetooth
                                             if let Some(event) = parsed_message.t {
                                                 match event.as_str() {
+                                                    "DEVICES" => {
+                                                        tx_dbus.send(SystemCommand::GetAllBluetoothDevices).await.expect("Failed to send dbus command");
+                                                    },
                                                     "START_DISCOVERING" => {
                                                             tx_dbus.send(SystemCommand::BluetoothDiscovering("StartDiscovery".to_string())).await.expect("Failed to send dbus command");
                                                     },
@@ -162,29 +138,6 @@ pub async fn handle_connection(stream: WebSocket, state: Arc<AppState>) {
                                                                 tx_dbus.send(SystemCommand::UntrustBluetoothDevice(device.address)).await.expect("Failed to send dbus command");
                                                             }
                                                         }
-                                                    },
-                                                    _ => {}
-                                                }
-                                            }
-                                        },
-                                        3 => { // Op code 3 for network
-                                            if let Some(event) = parsed_message.t {
-                                                match event.as_str() {
-                                                    "INTERFACES" => {
-                                                        tx_dbus.send(SystemCommand::GetNetworkInterfaces).await.expect("Failed to send dbus command");
-                                                    },
-                                                    "SCAN" => {
-                                                        tx_dbus.send(SystemCommand::WlanScan).await.expect("Failed to send dbus command");
-                                                    },
-                                                    "CONNECT" => {
-                                                        if let Some(message) = parsed_message.d {
-                                                            if let Ok(wifi_data) = serde_json::from_value::<WlanData>(message) {
-                                                                tx_dbus.send(SystemCommand::ConnectWifi(wifi_data.ssid, wifi_data.password )).await.expect("Failed to send dbus command");
-                                                            }
-                                                        }
-                                                    },
-                                                    "DISCONNECT" => {
-                                                        tx_dbus.send(SystemCommand::DisconnectWifi).await.expect("Failed to send dbus command");
                                                     },
                                                     _ => {}
                                                 }

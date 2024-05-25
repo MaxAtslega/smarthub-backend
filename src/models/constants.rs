@@ -22,6 +22,11 @@ pub struct NewConstant {
     pub value: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct UpdateConstant {
+    pub value: String,
+}
+
 impl Constant {
     // Method to get all constants for a specific user_id
     pub fn get_all_by_user_id(uid: i32, conn: &mut PooledConnection<ConnectionManager<SqliteConnection>>) -> Result<Vec<Constant>, diesel::result::Error> {

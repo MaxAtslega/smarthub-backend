@@ -16,7 +16,7 @@ use tower_http::cors::CorsLayer;
 use crate::api::actions::{delete_user_action_by_id, get_user_actions_by_user_id, post_user_action, put_user_action};
 use crate::api::constants::{delete_constant_by_user_id_and_name, get_constants_by_user_id, post_constant, put_constant};
 use crate::api::requests::{delete_user_request_by_id, get_user_requests_by_user_id, post_user_request, put_user_request};
-use crate::api::system::{get_info, post_reboot, post_shutdown};
+use crate::api::system::{connect_wifi, disconnect_wifi, get_current_network_status, get_info, get_scan_results, post_reboot, post_shutdown, start_scan, start_wpa_supplicant, stop_wpa_supplicant};
 use crate::api::users::{delete_user, get_user_by_id, get_users, post_user, put_user};
 use crate::common::db::DatabasePool;
 use crate::config::ServerConf;
@@ -68,6 +68,13 @@ pub async fn init(web_socket_conf: &ServerConf, tx: broadcast::Sender<WebSocketM
         .route("/requests", post(post_user_request))
         .route("/requests/:id", delete(delete_user_request_by_id))
         .route("/requests/:id", put(put_user_request))
+        .route("/wifi/start", post(start_wpa_supplicant))
+        .route("/wifi/stop", post(stop_wpa_supplicant))
+        .route("/wifi/scan/start", post(start_scan))
+        .route("/wifi/scan/results", get(get_scan_results))
+        .route("/wifi/status", get(get_current_network_status))
+        .route("/wifi/connect", post(connect_wifi))
+        .route("/wifi/disconnect", post(disconnect_wifi))
         .layer(CorsLayer::permissive())
         .with_state(app_state);
 
