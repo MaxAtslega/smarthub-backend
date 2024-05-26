@@ -1,9 +1,20 @@
 use std::process::Command;
+use std::sync::Arc;
 
-use axum::http::StatusCode;
 use axum::Json;
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
+use axum::{
+    body::Bytes,
+    http::{HeaderMap, HeaderValue, StatusCode},
+    response::{IntoResponse, Response},
+    routing::get,
+    Router,
+};
+use axum::extract::Query;
+use http::header::CONTENT_TYPE;
+use reqwest::Client;
+use tokio::sync::OnceCell;
 
 use crate::api::ErrorMessage;
 
@@ -270,5 +281,34 @@ pub async fn disconnect_wifi() -> Result<Json<MessageResponse>, (StatusCode, Jso
                 message: "Failed to disconnect from Wi-Fi".to_string(),
             }),
         )),
+    }
+}
+
+
+#[derive(Deserialize)]
+struct ImageQuery {
+    url: String,
+}
+
+pub async fn proxy_image(
+    Query(params): Query<std::collections::HashMap<String, String>>,
+    client: axum::Extension<Arc<Client>>,
+) -> Result<Response, StatusCode> {
+    let image_url = params.get("url").ok_or(StatusCode::BAD_REQUEST)?;
+    let response = client
+        .get(image_url)
+        .send()
+        .await
+        .map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+    if response.status().is_success() {
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+        Ok(([(CONTENT_TYPE, "image/png")], bytes.to_vec()).into_response())
+    } else {
+        Err(StatusCode::BAD_GATEWAY)
     }
 }

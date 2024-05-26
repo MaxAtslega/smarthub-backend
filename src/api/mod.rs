@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use axum::{extract::{
+use axum::{Extension, extract::{
     State,
     ws::WebSocketUpgrade,
 }, Json, response::IntoResponse, Router, routing::get};
 use axum::routing::{delete, post, put};
 use http::StatusCode;
 use log::info;
+use reqwest::Client;
 use serde_derive::Serialize;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
@@ -16,7 +17,7 @@ use tower_http::cors::CorsLayer;
 use crate::api::actions::{delete_user_action_by_id, get_user_actions_by_user_id, post_user_action, put_user_action};
 use crate::api::constants::{delete_constant_by_user_id_and_name, get_constants_by_user_id, post_constant, put_constant};
 use crate::api::requests::{delete_user_request_by_id, get_user_requests_by_user_id, post_user_request, put_user_request};
-use crate::api::system::{connect_wifi, disconnect_wifi, get_current_network_status, get_info, get_scan_results, post_reboot, post_shutdown, start_scan, start_wpa_supplicant, stop_wpa_supplicant};
+use crate::api::system::{connect_wifi, disconnect_wifi, get_current_network_status, get_info, get_scan_results, post_reboot, post_shutdown, proxy_image, start_scan, start_wpa_supplicant, stop_wpa_supplicant};
 use crate::api::users::{delete_user, get_user_by_id, get_users, post_user, put_user};
 use crate::common::db::DatabasePool;
 use crate::config::ServerConf;
@@ -45,7 +46,8 @@ pub async fn init(web_socket_conf: &ServerConf, tx: broadcast::Sender<WebSocketM
     let address = format!("{}:{}", web_socket_conf.address, web_socket_conf.port);
 
     let app_state = Arc::new(AppState { tx, tx_dbus, db_pool: db_pool.clone() });
-
+    let shared_client = Arc::new(Client::new());
+    
     let app = Router::new()
         .route("/ws", get(websocket_handler))
         .route("/", get(get_info))
@@ -75,7 +77,9 @@ pub async fn init(web_socket_conf: &ServerConf, tx: broadcast::Sender<WebSocketM
         .route("/wifi/status", get(get_current_network_status))
         .route("/wifi/connect", post(connect_wifi))
         .route("/wifi/disconnect", post(disconnect_wifi))
+        .route("/proxy-image", get(proxy_image))
         .layer(CorsLayer::permissive())
+        .layer(Extension(shared_client))
         .with_state(app_state);
 
     let try_socket = TcpListener::bind(&address).await;
