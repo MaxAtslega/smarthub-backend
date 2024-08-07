@@ -1,0 +1,12 @@
+[app]
+environment = "dev"
+
+[log]
+file = "latest.api.log"
+
+[server]
+address = "0.0.0.0"
+port = 6814
+
+[database]
+connection_string = "Database.db"

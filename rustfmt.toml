@@ -1,0 +1,7 @@
+indent_style = "Block"
+reorder_imports = true
+binop_separatr = "Front"
+blank_lines_lower_bound = 0
+brace_style = "PreferSameLine"
+wrap_comments = true
+control_brace_style = "AlwaysSameLine"
