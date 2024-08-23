@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-diesel = { version = "2.1.4", features = ["sqlite", "r2d2", "chrono"] }
+diesel = { version = "2.2.3", features = ["sqlite", "r2d2", "chrono"] }
 log = "0.4.20"
 
 rppal = "0.17.1"
